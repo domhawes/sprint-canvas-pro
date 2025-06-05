@@ -5,18 +5,18 @@ import { Calendar, User, Flag } from 'lucide-react';
 const TaskCard = ({ task, onClick, onDragStart }) => {
   const getPriorityColor = (priority) => {
     switch (priority) {
-      case 'High':
+      case 'high':
         return 'text-red-600 bg-red-100';
-      case 'Medium':
+      case 'medium':
         return 'text-yellow-600 bg-yellow-100';
-      case 'Low':
+      case 'low':
         return 'text-green-600 bg-green-100';
       default:
         return 'text-gray-600 bg-gray-100';
     }
   };
 
-  const isOverdue = new Date(task.dueDate) < new Date();
+  const isOverdue = task.due_date && new Date(task.due_date) < new Date();
 
   return (
     <div
@@ -41,26 +41,19 @@ const TaskCard = ({ task, onClick, onDragStart }) => {
         </p>
       )}
 
-      <div className="flex flex-wrap gap-1 mb-3">
-        {task.tags?.map((tag) => (
-          <span
-            key={tag}
-            className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full"
-          >
-            {tag}
-          </span>
-        ))}
-      </div>
-
       <div className="flex items-center justify-between text-sm text-gray-600">
         <div className="flex items-center">
           <User className="w-4 h-4 mr-1" />
-          <span className="truncate">{task.assignee}</span>
+          <span className="truncate">
+            {task.assignee?.full_name || task.assignee?.email || 'Unassigned'}
+          </span>
         </div>
-        <div className={`flex items-center ${isOverdue ? 'text-red-600' : ''}`}>
-          <Calendar className="w-4 h-4 mr-1" />
-          <span>{new Date(task.dueDate).toLocaleDateString()}</span>
-        </div>
+        {task.due_date && (
+          <div className={`flex items-center ${isOverdue ? 'text-red-600' : ''}`}>
+            <Calendar className="w-4 h-4 mr-1" />
+            <span>{new Date(task.due_date).toLocaleDateString()}</span>
+          </div>
+        )}
       </div>
     </div>
   );

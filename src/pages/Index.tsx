@@ -1,51 +1,48 @@
 
-import React, { useState } from 'react';
-import { Plus, Search, Filter, MoreHorizontal } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Plus, Search } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import KanbanBoard from '../components/KanbanBoard';
 import ProjectCard from '../components/ProjectCard';
 import Navbar from '../components/Navbar';
+import CreateProjectModal from '../components/CreateProjectModal';
+import { useAuth } from '@/contexts/AuthContext';
+import { useProjects } from '@/hooks/useProjects';
 
 const Index = () => {
   const [currentView, setCurrentView] = useState('dashboard');
-  const [selectedProjectId, setSelectedProjectId] = useState(null);
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const { user, loading: authLoading } = useAuth();
+  const { projects, loading: projectsLoading, createProject } = useProjects();
+  const navigate = useNavigate();
 
-  // Sample projects data
-  const projects = [
-    {
-      id: 1,
-      name: "Website Redesign",
-      description: "Complete overhaul of company website with modern design",
-      color: "bg-blue-500",
-      memberCount: 4,
-      taskCount: 12,
-      completedTasks: 7,
-      dueDate: "2024-07-15"
-    },
-    {
-      id: 2,
-      name: "Mobile App Development",
-      description: "Native iOS and Android app for customer engagement",
-      color: "bg-purple-500",
-      memberCount: 6,
-      taskCount: 24,
-      completedTasks: 9,
-      dueDate: "2024-08-30"
-    },
-    {
-      id: 3,
-      name: "Marketing Campaign",
-      description: "Q3 digital marketing campaign across all channels",
-      color: "bg-green-500",
-      memberCount: 3,
-      taskCount: 8,
-      completedTasks: 5,
-      dueDate: "2024-06-20"
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate('/auth');
     }
-  ];
+  }, [user, authLoading, navigate]);
 
-  const handleProjectSelect = (projectId) => {
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center mx-auto mb-4">
+            <span className="text-white font-bold text-xl">K</span>
+          </div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
+
+  const handleProjectSelect = (projectId: string) => {
     setSelectedProjectId(projectId);
     setCurrentView('kanban');
   };
@@ -55,12 +52,21 @@ const Index = () => {
     setSelectedProjectId(null);
   };
 
+  const handleCreateProject = async (projectData: { name: string; description: string; color: string }) => {
+    const project = await createProject(projectData);
+    if (project) {
+      setShowCreateModal(false);
+    }
+  };
+
+  const selectedProject = projects.find(p => p.id === selectedProjectId);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
       <Navbar 
         currentView={currentView} 
         onBackToDashboard={handleBackToDashboard}
-        selectedProject={projects.find(p => p.id === selectedProjectId)}
+        selectedProject={selectedProject}
       />
       
       {currentView === 'dashboard' && (
@@ -68,7 +74,7 @@ const Index = () => {
           {/* Header Section */}
           <div className="mb-8">
             <h1 className="text-4xl font-bold text-gray-900 mb-2">
-              Welcome back! 👋
+              Welcome back, {user.user_metadata?.full_name || user.email}! 👋
             </h1>
             <p className="text-xl text-gray-600">
               Manage your projects and stay productive
@@ -94,7 +100,7 @@ const Index = () => {
                 <div>
                   <p className="text-sm font-medium text-gray-600">Active Tasks</p>
                   <p className="text-3xl font-bold text-gray-900">
-                    {projects.reduce((sum, p) => sum + (p.taskCount - p.completedTasks), 0)}
+                    {projects.reduce((sum, p) => sum + ((p.taskCount || 0) - (p.completedTasks || 0)), 0)}
                   </p>
                 </div>
                 <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
@@ -108,7 +114,7 @@ const Index = () => {
                 <div>
                   <p className="text-sm font-medium text-gray-600">Completed</p>
                   <p className="text-3xl font-bold text-gray-900">
-                    {projects.reduce((sum, p) => sum + p.completedTasks, 0)}
+                    {projects.reduce((sum, p) => sum + (p.completedTasks || 0), 0)}
                   </p>
                 </div>
                 <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
@@ -121,7 +127,7 @@ const Index = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Team Members</p>
-                  <p className="text-3xl font-bold text-gray-900">12</p>
+                  <p className="text-3xl font-bold text-gray-900">1</p>
                 </div>
                 <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
                   <div className="w-6 h-6 bg-purple-500 rounded"></div>
@@ -141,28 +147,54 @@ const Index = () => {
                   className="pl-10 pr-4 py-2 w-64"
                 />
               </div>
-              <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+              <Button 
+                onClick={() => setShowCreateModal(true)}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              >
                 <Plus className="w-4 h-4 mr-2" />
                 New Project
               </Button>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {projects.map((project) => (
-              <ProjectCard
-                key={project.id}
-                project={project}
-                onSelect={() => handleProjectSelect(project.id)}
-              />
-            ))}
-          </div>
+          {projectsLoading ? (
+            <div className="text-center py-12">
+              <p className="text-gray-600">Loading projects...</p>
+            </div>
+          ) : projects.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-gray-600 mb-4">You don't have any projects yet.</p>
+              <Button 
+                onClick={() => setShowCreateModal(true)}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Create Your First Project
+              </Button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+              {projects.map((project) => (
+                <ProjectCard
+                  key={project.id}
+                  project={project}
+                  onSelect={() => handleProjectSelect(project.id)}
+                />
+              ))}
+            </div>
+          )}
         </div>
       )}
 
       {currentView === 'kanban' && selectedProjectId && (
         <KanbanBoard projectId={selectedProjectId} />
       )}
+
+      <CreateProjectModal
+        open={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onCreateProject={handleCreateProject}
+      />
     </div>
   );
 };
