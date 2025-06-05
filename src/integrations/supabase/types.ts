@@ -245,11 +245,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_manage_project: {
+        Args: { project_uuid: string; user_uuid: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _user_id: string
           _role: Database["public"]["Enums"]["app_role"]
         }
+        Returns: boolean
+      }
+      is_project_member: {
+        Args: { project_uuid: string; user_uuid: string }
         Returns: boolean
       }
     }
