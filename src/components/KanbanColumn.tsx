@@ -4,7 +4,7 @@ import { Plus, MoreHorizontal } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import TaskCard from './TaskCard';
 
-const KanbanColumn = ({ column, onTaskClick, onDragStart, onDrop }) => {
+const KanbanColumn = ({ column, onTaskClick, onDragStart, onDrop, onAddCard }) => {
   const handleDragOver = (e) => {
     e.preventDefault();
   };
@@ -12,6 +12,10 @@ const KanbanColumn = ({ column, onTaskClick, onDragStart, onDrop }) => {
   const handleDrop = (e) => {
     e.preventDefault();
     onDrop(column.id);
+  };
+
+  const handleAddCard = () => {
+    onAddCard(column.id);
   };
 
   return (
@@ -48,6 +52,7 @@ const KanbanColumn = ({ column, onTaskClick, onDragStart, onDrop }) => {
         <Button 
           variant="ghost" 
           className="w-full text-gray-600 hover:text-gray-900 border-2 border-dashed border-gray-300 hover:border-gray-400"
+          onClick={handleAddCard}
         >
           <Plus className="w-4 h-4 mr-2" />
           Add a card

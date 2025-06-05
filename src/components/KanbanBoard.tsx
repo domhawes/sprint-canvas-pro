@@ -9,11 +9,13 @@ import { useKanbanBoard } from '@/hooks/useKanbanBoard';
 const KanbanBoard = ({ projectId }) => {
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
+  const [selectedColumnId, setSelectedColumnId] = useState(null);
   const [draggedTask, setDraggedTask] = useState(null);
   const { columns, loading, moveTask, createTask } = useKanbanBoard(projectId);
 
   const handleTaskClick = (task) => {
     setSelectedTask(task);
+    setSelectedColumnId(null);
     setShowTaskModal(true);
   };
 
@@ -22,6 +24,7 @@ const KanbanBoard = ({ projectId }) => {
     console.log('Saving task:', taskData);
     setShowTaskModal(false);
     setSelectedTask(null);
+    setSelectedColumnId(null);
   };
 
   const handleDragStart = (task) => {
@@ -40,7 +43,26 @@ const KanbanBoard = ({ projectId }) => {
 
   const handleCreateTask = () => {
     setSelectedTask(null);
+    setSelectedColumnId(null);
     setShowTaskModal(true);
+  };
+
+  const handleAddCard = (columnId) => {
+    setSelectedTask(null);
+    setSelectedColumnId(columnId);
+    setShowTaskModal(true);
+  };
+
+  const handleCreateTaskInColumn = async (taskData) => {
+    const taskWithColumn = {
+      ...taskData,
+      column_id: selectedColumnId || taskData.column_id
+    };
+    
+    await createTask(taskWithColumn);
+    setShowTaskModal(false);
+    setSelectedTask(null);
+    setSelectedColumnId(null);
   };
 
   if (loading) {
@@ -76,6 +98,7 @@ const KanbanBoard = ({ projectId }) => {
             onTaskClick={handleTaskClick}
             onDragStart={handleDragStart}
             onDrop={handleDrop}
+            onAddCard={handleAddCard}
           />
         ))}
       </div>
@@ -84,12 +107,14 @@ const KanbanBoard = ({ projectId }) => {
         <TaskModal
           task={selectedTask}
           columns={columns}
+          preselectedColumnId={selectedColumnId}
           onSave={handleTaskSave}
           onClose={() => {
             setShowTaskModal(false);
             setSelectedTask(null);
+            setSelectedColumnId(null);
           }}
-          onCreate={createTask}
+          onCreate={selectedColumnId ? handleCreateTaskInColumn : createTask}
         />
       )}
     </div>

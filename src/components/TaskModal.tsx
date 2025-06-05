@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { X, Calendar, User, Flag, Tag } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -9,17 +8,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 interface TaskModalProps {
   task?: any;
   columns: any[];
+  preselectedColumnId?: string;
   onSave: (taskData: any) => void;
   onClose: () => void;
   onCreate?: (taskData: any) => Promise<any>;
 }
 
-const TaskModal = ({ task, columns, onSave, onClose, onCreate }: TaskModalProps) => {
+const TaskModal = ({ task, columns, preselectedColumnId, onSave, onClose, onCreate }: TaskModalProps) => {
   const [formData, setFormData] = useState({
     id: task?.id || Date.now(),
     title: task?.title || '',
     description: task?.description || '',
-    column_id: task?.column_id || (columns[0]?.id || ''),
+    column_id: task?.column_id || preselectedColumnId || (columns[0]?.id || ''),
     assignee: task?.assignee?.full_name || '',
     due_date: task?.due_date || '',
     priority: task?.priority || 'medium',
@@ -99,7 +99,7 @@ const TaskModal = ({ task, columns, onSave, onClose, onCreate }: TaskModalProps)
             />
           </div>
 
-          {!task && (
+          {(!task || !preselectedColumnId) && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Column
@@ -107,6 +107,7 @@ const TaskModal = ({ task, columns, onSave, onClose, onCreate }: TaskModalProps)
               <Select
                 value={formData.column_id}
                 onValueChange={(value) => setFormData(prev => ({ ...prev, column_id: value }))}
+                disabled={!!preselectedColumnId}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -119,6 +120,17 @@ const TaskModal = ({ task, columns, onSave, onClose, onCreate }: TaskModalProps)
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+          )}
+
+          {preselectedColumnId && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Column
+              </label>
+              <div className="p-3 bg-gray-50 rounded-md border">
+                {columns.find(col => col.id === preselectedColumnId)?.title || 'Selected Column'}
+              </div>
             </div>
           )}
 
