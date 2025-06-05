@@ -9,16 +9,24 @@ export const useAnalytics = () => {
 
   const trackEvent = useMutation({
     mutationFn: async ({ eventType, eventData }: { eventType: string; eventData?: any }) => {
-      if (!user) return;
+      if (!user) {
+        console.log('Cannot track event: user not authenticated');
+        return;
+      }
       
-      const { data, error } = await supabase.rpc('track_user_event', {
-        p_user_id: user.id,
-        p_event_type: eventType,
-        p_event_data: eventData ? JSON.stringify(eventData) : null,
-      });
-      
-      if (error) throw error;
-      return data;
+      try {
+        const { data, error } = await supabase.rpc('track_user_event', {
+          p_user_id: user.id,
+          p_event_type: eventType,
+          p_event_data: eventData ? JSON.stringify(eventData) : null,
+        });
+        
+        if (error) throw error;
+        return data;
+      } catch (error) {
+        console.error('Error tracking event:', error);
+        throw error;
+      }
     },
   });
 

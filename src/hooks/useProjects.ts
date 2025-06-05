@@ -24,7 +24,10 @@ export const useProjects = () => {
   const { toast } = useToast();
 
   const fetchProjects = async () => {
-    if (!user) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
 
     try {
       console.log('Fetching projects for user:', user.id);
@@ -45,6 +48,7 @@ export const useProjects = () => {
       if (!membershipData || membershipData.length === 0) {
         console.log('No project memberships found');
         setProjects([]);
+        setLoading(false);
         return;
       }
 
@@ -213,7 +217,10 @@ export const useProjects = () => {
   };
 
   useEffect(() => {
-    fetchProjects();
+    // Only fetch projects if user is defined (either authenticated or null)
+    if (user !== undefined) {
+      fetchProjects();
+    }
   }, [user]);
 
   return {

@@ -22,13 +22,18 @@ const CRM = () => {
   }, [user, loading, navigate]);
 
   React.useEffect(() => {
-    if (user) {
-      trackEvent.mutate({ 
-        eventType: 'crm_page_viewed',
-        eventData: { page: 'crm' }
-      });
+    // Only track events if user is authenticated and trackEvent is available
+    if (user && trackEvent) {
+      try {
+        trackEvent.mutate({ 
+          eventType: 'crm_page_viewed',
+          eventData: { page: 'crm' }
+        });
+      } catch (error) {
+        console.error('Failed to track CRM page view:', error);
+      }
     }
-  }, [user]);
+  }, [user, trackEvent]);
 
   if (loading) {
     return (
