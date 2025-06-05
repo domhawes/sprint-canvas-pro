@@ -44,32 +44,112 @@ export type Database = {
           },
         ]
       }
+      companies: {
+        Row: {
+          created_at: string
+          description: string | null
+          founded_year: number | null
+          headquarters_location: string | null
+          id: string
+          industry: string | null
+          logo_url: string | null
+          name: string
+          size_range: string | null
+          updated_at: string
+          website: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          founded_year?: number | null
+          headquarters_location?: string | null
+          id?: string
+          industry?: string | null
+          logo_url?: string | null
+          name: string
+          size_range?: string | null
+          updated_at?: string
+          website?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          founded_year?: number | null
+          headquarters_location?: string | null
+          id?: string
+          industry?: string | null
+          logo_url?: string | null
+          name?: string
+          size_range?: string | null
+          updated_at?: string
+          website?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
+          bio: string | null
+          company_id: string | null
           created_at: string | null
+          department: string | null
           email: string | null
           full_name: string | null
           id: string
+          job_title: string | null
+          linkedin_imported_at: string | null
+          linkedin_url: string | null
+          location: string | null
+          phone: string | null
+          skills: string[] | null
           updated_at: string | null
+          years_experience: number | null
         }
         Insert: {
           avatar_url?: string | null
+          bio?: string | null
+          company_id?: string | null
           created_at?: string | null
+          department?: string | null
           email?: string | null
           full_name?: string | null
           id: string
+          job_title?: string | null
+          linkedin_imported_at?: string | null
+          linkedin_url?: string | null
+          location?: string | null
+          phone?: string | null
+          skills?: string[] | null
           updated_at?: string | null
+          years_experience?: number | null
         }
         Update: {
           avatar_url?: string | null
+          bio?: string | null
+          company_id?: string | null
           created_at?: string | null
+          department?: string | null
           email?: string | null
           full_name?: string | null
           id?: string
+          job_title?: string | null
+          linkedin_imported_at?: string | null
+          linkedin_url?: string | null
+          location?: string | null
+          phone?: string | null
+          skills?: string[] | null
           updated_at?: string | null
+          years_experience?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       project_members: {
         Row: {
@@ -193,6 +273,36 @@ export type Database = {
           },
         ]
       }
+      user_analytics: {
+        Row: {
+          created_at: string
+          event_data: Json | null
+          event_type: string
+          id: string
+          ip_address: unknown | null
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_data?: Json | null
+          event_type: string
+          id?: string
+          ip_address?: unknown | null
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          event_data?: Json | null
+          event_type?: string
+          id?: string
+          ip_address?: unknown | null
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
@@ -207,6 +317,45 @@ export type Database = {
         Update: {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_sessions: {
+        Row: {
+          actions_performed: number | null
+          browser: string | null
+          created_at: string
+          device_type: string | null
+          duration_minutes: number | null
+          id: string
+          pages_visited: number | null
+          session_end: string | null
+          session_start: string
+          user_id: string
+        }
+        Insert: {
+          actions_performed?: number | null
+          browser?: string | null
+          created_at?: string
+          device_type?: string | null
+          duration_minutes?: number | null
+          id?: string
+          pages_visited?: number | null
+          session_end?: string | null
+          session_start?: string
+          user_id: string
+        }
+        Update: {
+          actions_performed?: number | null
+          browser?: string | null
+          created_at?: string
+          device_type?: string | null
+          duration_minutes?: number | null
+          id?: string
+          pages_visited?: number | null
+          session_end?: string | null
+          session_start?: string
           user_id?: string
         }
         Relationships: []
@@ -234,6 +383,16 @@ export type Database = {
       is_project_member: {
         Args: { project_uuid: string; user_uuid: string }
         Returns: boolean
+      }
+      track_user_event: {
+        Args: {
+          p_user_id: string
+          p_event_type: string
+          p_event_data?: Json
+          p_ip_address?: unknown
+          p_user_agent?: string
+        }
+        Returns: string
       }
       user_can_manage_project: {
         Args: { project_uuid: string; user_uuid: string }

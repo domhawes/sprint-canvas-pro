@@ -32,10 +32,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
+
+        // Track login events
+        if (event === 'SIGNED_IN' && session?.user) {
+          try {
+            await supabase.rpc('track_user_event', {
+              p_user_id: session.user.id,
+              p_event_type: 'login',
+              p_event_data: JSON.stringify({ method: 'email' }),
+            });
+          } catch (error) {
+            console.error('Failed to track login event:', error);
+          }
+        }
       }
     );
 

@@ -1,63 +1,95 @@
 
 import React from 'react';
-import { ArrowLeft, Settings } from 'lucide-react';
+import { ArrowLeft, Settings, User, BarChart3 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const Navbar = ({ currentView, onBackToDashboard, selectedProject, onProjectAdmin }) => {
-  const { signOut } = useAuth();
+  const { signOut, user } = useAuth();
+  const navigate = useNavigate();
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/auth');
+  };
 
   return (
     <nav className="bg-white border-b border-gray-200 px-6 py-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
-          {currentView === 'kanban' && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onBackToDashboard}
-              className="text-gray-600 hover:text-gray-900"
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Dashboard
-            </Button>
-          )}
+          <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+            <span className="text-white font-bold">K</span>
+          </div>
           
-          <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">K</span>
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-gray-900">
-                {currentView === 'kanban' && selectedProject ? selectedProject.name : 'Kanbana'}
-              </h1>
-              {currentView === 'kanban' && selectedProject && (
-                <p className="text-sm text-gray-600">{selectedProject.description}</p>
+          {currentView === 'kanban' && selectedProject ? (
+            <div className="flex items-center space-x-3">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={onBackToDashboard}
+                className="flex items-center space-x-1"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span>Back</span>
+              </Button>
+              <div className="h-6 w-px bg-gray-300"></div>
+              <h1 className="text-xl font-semibold text-gray-900">{selectedProject.name}</h1>
+              {onProjectAdmin && (
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={onProjectAdmin}
+                  className="flex items-center space-x-1"
+                >
+                  <Settings className="w-4 h-4" />
+                  <span>Settings</span>
+                </Button>
               )}
             </div>
-          </div>
+          ) : (
+            <h1 className="text-xl font-semibold text-gray-900">Kanbana</h1>
+          )}
         </div>
 
-        <div className="flex items-center space-x-3">
-          {currentView === 'kanban' && selectedProject && onProjectAdmin && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onProjectAdmin}
-              className="text-gray-600 hover:text-gray-900"
-            >
-              <Settings className="w-4 h-4 mr-2" />
-              Project Settings
-            </Button>
-          )}
-          
+        <div className="flex items-center space-x-4">
           <Button
-            variant="outline"
-            onClick={signOut}
-            className="text-gray-600 hover:text-gray-900"
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate('/crm')}
+            className="flex items-center gap-2"
           >
-            Sign Out
+            <BarChart3 className="w-4 h-4" />
+            CRM & Analytics
           </Button>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="flex items-center space-x-2">
+                <User className="w-4 h-4" />
+                <span>{user?.user_metadata?.full_name || user?.email}</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => navigate('/crm')}>
+                <User className="w-4 h-4 mr-2" />
+                Profile & Analytics
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate('/admin')}>
+                <Settings className="w-4 h-4 mr-2" />
+                Admin Panel
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleSignOut}>
+                Sign Out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </nav>
