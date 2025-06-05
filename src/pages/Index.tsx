@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Search } from 'lucide-react';
+import { Plus, Search, Settings } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import KanbanBoard from '../components/KanbanBoard';
@@ -185,7 +184,7 @@ const Index = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
               {projects.map((project) => (
-                <div key={project.id} className="relative">
+                <div key={project.id} className="relative group">
                   <ProjectCard
                     project={project}
                     onSelect={() => handleProjectSelect(project.id)}
