@@ -7,7 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 interface Task {
   id: string;
   title: string;
-  description: string;
+  description: string | null;
   column_id: string;
   project_id: string;
   assignee_id: string | null;
@@ -15,18 +15,18 @@ interface Task {
   due_date: string | null;
   position: number;
   created_by: string;
-  created_at: string;
-  updated_at: string;
+  created_at: string | null;
+  updated_at: string | null;
   assignee?: {
-    full_name: string;
-    email: string;
-  };
+    full_name: string | null;
+    email: string | null;
+  } | null;
 }
 
 interface Column {
   id: string;
   title: string;
-  color: string;
+  color: string | null;
   position: number;
   project_id: string;
   tasks: Task[];
@@ -63,14 +63,20 @@ export const useKanbanBoard = (projectId: string) => {
 
       if (tasksError) throw tasksError;
 
-      // Group tasks by column
-      const columnsWithTasks = columnsData?.map(column => ({
+      // Group tasks by column and ensure type safety
+      const columnsWithTasks: Column[] = columnsData?.map(column => ({
         ...column,
-        tasks: tasksData?.filter(task => task.column_id === column.id) || [],
+        tasks: (tasksData || [])
+          .filter(task => task.column_id === column.id)
+          .map(task => ({
+            ...task,
+            assignee: Array.isArray(task.assignee) ? task.assignee[0] : task.assignee
+          })) || [],
       })) || [];
 
       setColumns(columnsWithTasks);
     } catch (error: any) {
+      console.log('Error fetching board data:', error);
       toast({
         title: "Error fetching board data",
         description: error.message,
@@ -119,6 +125,7 @@ export const useKanbanBoard = (projectId: string) => {
         description: "Task has been moved successfully.",
       });
     } catch (error: any) {
+      console.log('Error moving task:', error);
       toast({
         title: "Error moving task",
         description: error.message,
@@ -157,6 +164,7 @@ export const useKanbanBoard = (projectId: string) => {
       fetchBoardData();
       return data;
     } catch (error: any) {
+      console.log('Error creating task:', error);
       toast({
         title: "Error creating task",
         description: error.message,

@@ -1,27 +1,48 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { X, Calendar, User, Flag, Tag } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-const TaskModal = ({ task, onSave, onClose }) => {
+interface TaskModalProps {
+  task?: any;
+  columns: any[];
+  onSave: (taskData: any) => void;
+  onClose: () => void;
+  onCreate?: (taskData: any) => Promise<any>;
+}
+
+const TaskModal = ({ task, columns, onSave, onClose, onCreate }: TaskModalProps) => {
   const [formData, setFormData] = useState({
     id: task?.id || Date.now(),
     title: task?.title || '',
     description: task?.description || '',
-    assignee: task?.assignee || '',
-    dueDate: task?.dueDate || '',
-    priority: task?.priority || 'Medium',
+    column_id: task?.column_id || (columns[0]?.id || ''),
+    assignee: task?.assignee?.full_name || '',
+    due_date: task?.due_date || '',
+    priority: task?.priority || 'medium',
     tags: task?.tags || []
   });
 
   const [newTag, setNewTag] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(formData);
+    
+    if (task) {
+      onSave(formData);
+    } else if (onCreate) {
+      await onCreate({
+        title: formData.title,
+        description: formData.description,
+        column_id: formData.column_id,
+        priority: formData.priority as 'low' | 'medium' | 'high',
+        due_date: formData.due_date || undefined,
+      });
+      onClose();
+    }
   };
 
   const handleAddTag = () => {
@@ -34,7 +55,7 @@ const TaskModal = ({ task, onSave, onClose }) => {
     }
   };
 
-  const handleRemoveTag = (tagToRemove) => {
+  const handleRemoveTag = (tagToRemove: string) => {
     setFormData(prev => ({
       ...prev,
       tags: prev.tags.filter(tag => tag !== tagToRemove)
@@ -78,6 +99,29 @@ const TaskModal = ({ task, onSave, onClose }) => {
             />
           </div>
 
+          {!task && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Column
+              </label>
+              <Select
+                value={formData.column_id}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, column_id: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {columns.map((column) => (
+                    <SelectItem key={column.id} value={column.id}>
+                      {column.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -98,8 +142,8 @@ const TaskModal = ({ task, onSave, onClose }) => {
               </label>
               <Input
                 type="date"
-                value={formData.dueDate}
-                onChange={(e) => setFormData(prev => ({ ...prev, dueDate: e.target.value }))}
+                value={formData.due_date}
+                onChange={(e) => setFormData(prev => ({ ...prev, due_date: e.target.value }))}
               />
             </div>
           </div>
@@ -117,9 +161,9 @@ const TaskModal = ({ task, onSave, onClose }) => {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Low">Low</SelectItem>
-                <SelectItem value="Medium">Medium</SelectItem>
-                <SelectItem value="High">High</SelectItem>
+                <SelectItem value="low">Low</SelectItem>
+                <SelectItem value="medium">Medium</SelectItem>
+                <SelectItem value="high">High</SelectItem>
               </SelectContent>
             </Select>
           </div>
