@@ -249,6 +249,10 @@ export type Database = {
         Args: { project_uuid: string; user_uuid: string }
         Returns: boolean
       }
+      get_user_project_ids: {
+        Args: { user_uuid: string }
+        Returns: string[]
+      }
       has_role: {
         Args: {
           _user_id: string
@@ -257,6 +261,10 @@ export type Database = {
         Returns: boolean
       }
       is_project_member: {
+        Args: { project_uuid: string; user_uuid: string }
+        Returns: boolean
+      }
+      user_can_manage_project: {
         Args: { project_uuid: string; user_uuid: string }
         Returns: boolean
       }

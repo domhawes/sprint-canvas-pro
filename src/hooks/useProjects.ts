@@ -106,6 +106,37 @@ export const useProjects = () => {
 
     try {
       console.log('Creating project:', projectData);
+      console.log('Current user:', user);
+      
+      // First, ensure the user profile exists
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', user.id)
+        .single();
+
+      if (profileError && profileError.code !== 'PGRST116') {
+        console.error('Error checking user profile:', profileError);
+        throw profileError;
+      }
+
+      // If profile doesn't exist, create it
+      if (!profile) {
+        console.log('Creating user profile...');
+        const { error: createProfileError } = await supabase
+          .from('profiles')
+          .insert({
+            id: user.id,
+            email: user.email,
+            full_name: user.user_metadata?.full_name || user.email,
+          });
+
+        if (createProfileError) {
+          console.error('Error creating user profile:', createProfileError);
+          throw createProfileError;
+        }
+        console.log('User profile created');
+      }
       
       // Create the project
       const { data: project, error: projectError } = await supabase
