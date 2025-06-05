@@ -8,6 +8,7 @@ import KanbanBoard from '../components/KanbanBoard';
 import ProjectCard from '../components/ProjectCard';
 import Navbar from '../components/Navbar';
 import CreateProjectModal from '../components/CreateProjectModal';
+import ProjectAdmin from '../components/ProjectAdmin';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProjects } from '@/hooks/useProjects';
 
@@ -15,8 +16,10 @@ const Index = () => {
   const [currentView, setCurrentView] = useState('dashboard');
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showAdminModal, setShowAdminModal] = useState(false);
+  const [adminProject, setAdminProject] = useState(null);
   const { user, loading: authLoading } = useAuth();
-  const { projects, loading: projectsLoading, createProject } = useProjects();
+  const { projects, loading: projectsLoading, createProject, refetch } = useProjects();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -59,6 +62,12 @@ const Index = () => {
     }
   };
 
+  const handleProjectAdmin = (project, event) => {
+    event.stopPropagation();
+    setAdminProject(project);
+    setShowAdminModal(true);
+  };
+
   const selectedProject = projects.find(p => p.id === selectedProjectId);
 
   return (
@@ -67,6 +76,7 @@ const Index = () => {
         currentView={currentView} 
         onBackToDashboard={handleBackToDashboard}
         selectedProject={selectedProject}
+        onProjectAdmin={selectedProject ? () => handleProjectAdmin(selectedProject, { stopPropagation: () => {} }) : undefined}
       />
       
       {currentView === 'dashboard' && (
@@ -175,11 +185,20 @@ const Index = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
               {projects.map((project) => (
-                <ProjectCard
-                  key={project.id}
-                  project={project}
-                  onSelect={() => handleProjectSelect(project.id)}
-                />
+                <div key={project.id} className="relative">
+                  <ProjectCard
+                    project={project}
+                    onSelect={() => handleProjectSelect(project.id)}
+                  />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={(e) => handleProjectAdmin(project, e)}
+                  >
+                    <Settings className="w-4 h-4" />
+                  </Button>
+                </div>
               ))}
             </div>
           )}
@@ -195,6 +214,14 @@ const Index = () => {
         onClose={() => setShowCreateModal(false)}
         onCreateProject={handleCreateProject}
       />
+
+      {showAdminModal && (
+        <ProjectAdmin
+          project={adminProject}
+          onClose={() => setShowAdminModal(false)}
+          onProjectUpdated={refetch}
+        />
+      )}
     </div>
   );
 };

@@ -45,7 +45,7 @@ const TaskCard = ({ task, onClick, onDragStart }) => {
         <div className="flex items-center">
           <User className="w-4 h-4 mr-1" />
           <span className="truncate">
-            {task.assignee?.full_name || task.assignee?.email || 'Unassigned'}
+            {task.assignee_id ? 'Assigned' : 'Unassigned'}
           </span>
         </div>
         {task.due_date && (

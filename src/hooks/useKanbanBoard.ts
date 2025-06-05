@@ -17,10 +17,6 @@ interface Task {
   created_by: string;
   created_at: string | null;
   updated_at: string | null;
-  assignee?: {
-    full_name: string | null;
-    email: string | null;
-  } | null;
 }
 
 interface Column {
@@ -51,27 +47,19 @@ export const useKanbanBoard = (projectId: string) => {
 
       if (columnsError) throw columnsError;
 
-      // Fetch tasks with assignee info
+      // Fetch tasks without the problematic profile join
       const { data: tasksData, error: tasksError } = await supabase
         .from('tasks')
-        .select(`
-          *,
-          assignee:profiles(full_name, email)
-        `)
+        .select('*')
         .eq('project_id', projectId)
         .order('position');
 
       if (tasksError) throw tasksError;
 
-      // Group tasks by column and ensure type safety
+      // Group tasks by column
       const columnsWithTasks: Column[] = columnsData?.map(column => ({
         ...column,
-        tasks: (tasksData || [])
-          .filter(task => task.column_id === column.id)
-          .map(task => ({
-            ...task,
-            assignee: Array.isArray(task.assignee) ? task.assignee[0] : task.assignee
-          })) || [],
+        tasks: (tasksData || []).filter(task => task.column_id === column.id),
       })) || [];
 
       setColumns(columnsWithTasks);

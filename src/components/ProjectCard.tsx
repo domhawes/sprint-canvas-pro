@@ -1,10 +1,10 @@
 
 import React from 'react';
-import { Calendar, Users, MoreHorizontal } from 'lucide-react';
+import { Users, MoreHorizontal } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 
 const ProjectCard = ({ project, onSelect }) => {
-  const progressPercentage = (project.completedTasks / project.taskCount) * 100;
+  const progressPercentage = project.taskCount > 0 ? (project.completedTasks / project.taskCount) * 100 : 0;
 
   return (
     <div 
@@ -50,8 +50,7 @@ const ProjectCard = ({ project, onSelect }) => {
             {project.memberCount} members
           </div>
           <div className="flex items-center text-gray-600 text-sm">
-            <Calendar className="w-4 h-4 mr-1" />
-            {new Date(project.dueDate).toLocaleDateString()}
+            <span>Created {new Date(project.created_at).toLocaleDateString()}</span>
           </div>
         </div>
       </div>
