@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -38,7 +38,7 @@ const TaskModal = ({
   const [columnId, setColumnId] = useState('');
   const [priority, setPriority] = useState('medium');
   const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
-  const [categoryId, setCategoryId] = useState('');
+  const [categoryId, setCategoryId] = useState('none');
   const [showCalendar, setShowCalendar] = useState(false);
   const [showAttachments, setShowAttachments] = useState(false);
   
@@ -55,14 +55,14 @@ const TaskModal = ({
       setColumnId(task.column_id || '');
       setPriority(task.priority || 'medium');
       setDueDate(task.due_date ? new Date(task.due_date) : undefined);
-      setCategoryId(task.category_id || '');
+      setCategoryId(task.category_id || 'none');
     } else {
       setTitle('');
       setDescription('');
       setColumnId(preselectedColumnId || (columns.length > 0 ? columns[0].id : ''));
       setPriority('medium');
       setDueDate(undefined);
-      setCategoryId('');
+      setCategoryId('none');
     }
   }, [task, preselectedColumnId, columns]);
 
@@ -81,7 +81,7 @@ const TaskModal = ({
       column_id: columnId,
       priority,
       due_date: dueDate ? format(dueDate, 'yyyy-MM-dd') : null,
-      category_id: categoryId || null,
+      category_id: categoryId === 'none' ? null : categoryId,
     };
 
     console.log('Submitting task data:', taskData);
@@ -101,6 +101,9 @@ const TaskModal = ({
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Error</DialogTitle>
+            <DialogDescription>
+              No columns available. Please create columns first.
+            </DialogDescription>
           </DialogHeader>
           <p>No columns available. Please create columns first.</p>
           <Button onClick={onClose}>Close</Button>
@@ -116,6 +119,9 @@ const TaskModal = ({
           <DialogTitle>
             {isEditing ? 'Edit Task' : 'Create New Task'}
           </DialogTitle>
+          <DialogDescription>
+            {isEditing ? 'Update the task details below.' : 'Fill in the details to create a new task.'}
+          </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -181,7 +187,7 @@ const TaskModal = ({
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">No category</SelectItem>
+                  <SelectItem value="none">No category</SelectItem>
                   {categories.map((category) => (
                     <SelectItem key={category.id} value={category.id}>
                       <div className="flex items-center gap-2">
