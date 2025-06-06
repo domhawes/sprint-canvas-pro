@@ -8,6 +8,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
@@ -92,11 +93,15 @@ const Navbar = ({ currentView, onBackToDashboard, selectedProject, onProjectAdmi
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => navigate('/crm')}>
+                <User className="w-4 h-4 mr-2" />
+                Profile
+              </DropdownMenuItem>
               {isAdmin && (
                 <>
                   <DropdownMenuItem onClick={() => navigate('/crm')}>
-                    <User className="w-4 h-4 mr-2" />
-                    Profile & Analytics
+                    <BarChart3 className="w-4 h-4 mr-2" />
+                    CRM & Analytics
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => navigate('/admin')}>
                     <Settings className="w-4 h-4 mr-2" />
@@ -104,6 +109,7 @@ const Navbar = ({ currentView, onBackToDashboard, selectedProject, onProjectAdmi
                   </DropdownMenuItem>
                 </>
               )}
+              <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleSignOut}>
                 Sign Out
               </DropdownMenuItem>

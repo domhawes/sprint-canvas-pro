@@ -1,12 +1,18 @@
 
-import React, { useState } from 'react';
-import { X, Calendar, User, Flag, Tag } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import TaskAttachments from './TaskAttachments';
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { CalendarIcon, Save, X, Paperclip } from 'lucide-react';
+import { format } from 'date-fns';
+import { cn } from "@/lib/utils";
 import { useTaskCategories } from '@/hooks/useTaskCategories';
+import TaskAttachments from './TaskAttachments';
 
 interface TaskModalProps {
   task?: any;
@@ -14,110 +20,89 @@ interface TaskModalProps {
   preselectedColumnId?: string;
   onSave: (taskData: any) => void;
   onClose: () => void;
-  onCreate?: (taskData: any) => Promise<any>;
+  onCreate?: (taskData: any) => void;
   projectId: string;
 }
 
-const TaskModal = ({ task, columns, preselectedColumnId, onSave, onClose, onCreate, projectId }: TaskModalProps) => {
+const TaskModal = ({ 
+  task, 
+  columns, 
+  preselectedColumnId, 
+  onSave, 
+  onClose, 
+  onCreate,
+  projectId 
+}: TaskModalProps) => {
+  const [title, setTitle] = useState(task?.title || '');
+  const [description, setDescription] = useState(task?.description || '');
+  const [columnId, setColumnId] = useState(task?.column_id || preselectedColumnId || columns[0]?.id);
+  const [priority, setPriority] = useState(task?.priority || 'medium');
+  const [dueDate, setDueDate] = useState(task?.due_date ? new Date(task.due_date) : undefined);
+  const [categoryId, setCategoryId] = useState(task?.category_id || '');
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [showAttachments, setShowAttachments] = useState(false);
+  
   const { categories } = useTaskCategories(projectId);
-  const [formData, setFormData] = useState({
-    id: task?.id || Date.now(),
-    title: task?.title || '',
-    description: task?.description || '',
-    column_id: task?.column_id || preselectedColumnId || (columns[0]?.id || ''),
-    assignee: task?.assignee?.full_name || '',
-    due_date: task?.due_date || '',
-    priority: task?.priority || 'medium',
-    category_id: task?.category_id || '',
-    tags: task?.tags || []
-  });
+  
+  const isEditing = !!task;
 
-  const [newTag, setNewTag] = useState('');
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (task) {
-      onSave(formData);
+    const taskData = {
+      title,
+      description,
+      column_id: columnId,
+      priority,
+      due_date: dueDate ? format(dueDate, 'yyyy-MM-dd') : null,
+      category_id: categoryId || null,
+    };
+
+    if (isEditing) {
+      onSave({ ...task, ...taskData });
     } else if (onCreate) {
-      await onCreate({
-        title: formData.title,
-        description: formData.description,
-        column_id: formData.column_id,
-        priority: formData.priority as 'low' | 'medium' | 'high',
-        due_date: formData.due_date || undefined,
-        category_id: formData.category_id || undefined,
-      });
-      onClose();
+      onCreate(taskData);
     }
-  };
-
-  const handleAddTag = () => {
-    if (newTag.trim() && !formData.tags.includes(newTag.trim())) {
-      setFormData(prev => ({
-        ...prev,
-        tags: [...prev.tags, newTag.trim()]
-      }));
-      setNewTag('');
-    }
-  };
-
-  const handleRemoveTag = (tagToRemove: string) => {
-    setFormData(prev => ({
-      ...prev,
-      tags: prev.tags.filter(tag => tag !== tagToRemove)
-    }));
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-900">
-            {task ? 'Edit Task' : 'Create New Task'}
-          </h2>
-          <Button variant="ghost" size="sm" onClick={onClose}>
-            <X className="w-4 h-4" />
-          </Button>
-        </div>
+    <Dialog open onOpenChange={onClose}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>
+            {isEditing ? 'Edit Task' : 'Create New Task'}
+          </DialogTitle>
+        </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Task Title
-            </label>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="space-y-2">
+            <Label htmlFor="title">Title *</Label>
             <Input
-              value={formData.title}
-              onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-              placeholder="Enter task title..."
+              id="title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Enter task title"
               required
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Description
-            </label>
+          <div className="space-y-2">
+            <Label htmlFor="description">Description</Label>
             <Textarea
-              value={formData.description}
-              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-              placeholder="Enter task description..."
-              rows={4}
+              id="description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Enter task description"
+              rows={3}
             />
           </div>
 
-          {(!task || !preselectedColumnId) && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Column
-              </label>
-              <Select
-                value={formData.column_id}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, column_id: value }))}
-                disabled={!!preselectedColumnId}
-              >
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Column *</Label>
+              <Select value={columnId} onValueChange={setColumnId}>
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue placeholder="Select column" />
                 </SelectTrigger>
                 <SelectContent>
                   {columns.map((column) => (
@@ -128,143 +113,107 @@ const TaskModal = ({ task, columns, preselectedColumnId, onSave, onClose, onCrea
                 </SelectContent>
               </Select>
             </div>
-          )}
 
-          {preselectedColumnId && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Column
-              </label>
-              <div className="p-3 bg-gray-50 rounded-md border">
-                {columns.find(col => col.id === preselectedColumnId)?.title || 'Selected Column'}
-              </div>
-            </div>
-          )}
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Category
-            </label>
-            <Select
-              value={formData.category_id}
-              onValueChange={(value) => setFormData(prev => ({ ...prev, category_id: value }))}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select a category" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">No category</SelectItem>
-                {categories.map((category) => (
-                  <SelectItem key={category.id} value={category.id}>
-                    <div className="flex items-center gap-2">
-                      <div 
-                        className="w-3 h-3 rounded-full" 
-                        style={{ backgroundColor: category.color }}
-                      />
-                      {category.name}
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <User className="w-4 h-4 inline mr-1" />
-                Assignee
-              </label>
-              <Input
-                value={formData.assignee}
-                onChange={(e) => setFormData(prev => ({ ...prev, assignee: e.target.value }))}
-                placeholder="Assign to..."
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <Calendar className="w-4 h-4 inline mr-1" />
-                Due Date
-              </label>
-              <Input
-                type="date"
-                value={formData.due_date}
-                onChange={(e) => setFormData(prev => ({ ...prev, due_date: e.target.value }))}
-              />
+            <div className="space-y-2">
+              <Label>Priority</Label>
+              <Select value={priority} onValueChange={setPriority}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="low">Low</SelectItem>
+                  <SelectItem value="medium">Medium</SelectItem>
+                  <SelectItem value="high">High</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              <Flag className="w-4 h-4 inline mr-1" />
-              Priority
-            </label>
-            <Select
-              value={formData.priority}
-              onValueChange={(value) => setFormData(prev => ({ ...prev, priority: value }))}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="low">Low</SelectItem>
-                <SelectItem value="medium">Medium</SelectItem>
-                <SelectItem value="high">High</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {task && (
-            <TaskAttachments taskId={task.id} isEditing={true} />
-          )}
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              <Tag className="w-4 h-4 inline mr-1" />
-              Tags
-            </label>
-            <div className="flex gap-2 mb-2">
-              <Input
-                value={newTag}
-                onChange={(e) => setNewTag(e.target.value)}
-                placeholder="Add a tag..."
-                onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddTag())}
-              />
-              <Button type="button" onClick={handleAddTag} variant="outline">
-                Add
-              </Button>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Category</Label>
+              <Select value={categoryId} onValueChange={setCategoryId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">No category</SelectItem>
+                  {categories.map((category) => (
+                    <SelectItem key={category.id} value={category.id}>
+                      <div className="flex items-center gap-2">
+                        <div 
+                          className="w-3 h-3 rounded-full" 
+                          style={{ backgroundColor: category.color }}
+                        />
+                        {category.name}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {formData.tags.map((tag) => (
-                <span
-                  key={tag}
-                  className="bg-blue-100 text-blue-800 text-sm px-3 py-1 rounded-full flex items-center"
-                >
-                  {tag}
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveTag(tag)}
-                    className="ml-2 text-blue-600 hover:text-blue-800"
+
+            <div className="space-y-2">
+              <Label>Due Date</Label>
+              <Popover open={showCalendar} onOpenChange={setShowCalendar}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !dueDate && "text-muted-foreground"
+                    )}
                   >
-                    <X className="w-3 h-3" />
-                  </button>
-                </span>
-              ))}
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {dueDate ? format(dueDate, "PPP") : "Pick a date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={dueDate}
+                    onSelect={(date) => {
+                      setDueDate(date);
+                      setShowCalendar(false);
+                    }}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
 
-          <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
+          {isEditing && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Label>Attachments</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowAttachments(!showAttachments)}
+                >
+                  <Paperclip className="w-4 h-4 mr-2" />
+                  {showAttachments ? 'Hide' : 'Show'} Attachments
+                </Button>
+              </div>
+              {showAttachments && <TaskAttachments taskId={task.id} />}
+            </div>
+          )}
+
+          <div className="flex justify-end gap-3 pt-4 border-t">
             <Button type="button" variant="outline" onClick={onClose}>
+              <X className="w-4 h-4 mr-2" />
               Cancel
             </Button>
-            <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white">
-              {task ? 'Update Task' : 'Create Task'}
+            <Button type="submit">
+              <Save className="w-4 h-4 mr-2" />
+              {isEditing ? 'Save Changes' : 'Create Task'}
             </Button>
           </div>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 };
 

@@ -1,22 +1,43 @@
 
 import React, { useRef } from 'react';
-import { Paperclip, Download, Trash2, Upload } from 'lucide-react';
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Upload, Download, Trash2, File, Image, FileText } from 'lucide-react';
 import { useTaskAttachments } from '@/hooks/useTaskAttachments';
 
 interface TaskAttachmentsProps {
   taskId: string;
-  isEditing?: boolean;
 }
 
-const TaskAttachments = ({ taskId, isEditing = false }: TaskAttachmentsProps) => {
-  const { attachments, uploading, uploadAttachment, deleteAttachment, getFileUrl } = useTaskAttachments(taskId);
+const TaskAttachments = ({ taskId }: TaskAttachmentsProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { 
+    attachments, 
+    loading, 
+    uploading, 
+    uploadAttachment, 
+    deleteAttachment, 
+    getFileUrl 
+  } = useTaskAttachments(taskId);
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files && files.length > 0) {
-      uploadAttachment(files[0]);
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      uploadAttachment(file);
+      // Reset the input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const getFileIcon = (fileType: string) => {
+    if (fileType.startsWith('image/')) {
+      return <Image className="w-4 h-4" />;
+    } else if (fileType.includes('pdf')) {
+      return <FileText className="w-4 h-4" />;
+    } else {
+      return <File className="w-4 h-4" />;
     }
   };
 
@@ -28,74 +49,79 @@ const TaskAttachments = ({ taskId, isEditing = false }: TaskAttachmentsProps) =>
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  const getFileIcon = (fileType: string) => {
-    if (fileType.startsWith('image/')) return '🖼️';
-    if (fileType.includes('pdf')) return '📄';
-    if (fileType.includes('word') || fileType.includes('document')) return '📝';
-    if (fileType.includes('excel') || fileType.includes('spreadsheet')) return '📊';
-    if (fileType.includes('powerpoint') || fileType.includes('presentation')) return '📽️';
-    return '📎';
+  const handleDownload = (attachment: any) => {
+    const url = getFileUrl(attachment.file_path);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = attachment.file_name;
+    link.target = '_blank';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return (
-    <div className="space-y-3">
-      {isEditing && (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h4 className="text-sm font-medium">Attachments</h4>
         <div>
           <input
             ref={fileInputRef}
             type="file"
             onChange={handleFileSelect}
+            accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.gif,.bmp,.svg"
             className="hidden"
-            accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.gif,.bmp,.svg,.webp"
           />
           <Button
-            type="button"
-            variant="outline"
             size="sm"
+            variant="outline"
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
-            className="w-full"
           >
             <Upload className="w-4 h-4 mr-2" />
-            {uploading ? 'Uploading...' : 'Add Attachment'}
+            {uploading ? 'Uploading...' : 'Upload File'}
           </Button>
         </div>
-      )}
+      </div>
 
-      {attachments.length > 0 && (
+      {loading ? (
+        <p className="text-sm text-gray-600">Loading attachments...</p>
+      ) : attachments.length === 0 ? (
+        <p className="text-sm text-gray-600">No attachments yet.</p>
+      ) : (
         <div className="space-y-2">
-          <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
-            <Paperclip className="w-4 h-4" />
-            Attachments ({attachments.length})
-          </div>
-          
           {attachments.map((attachment) => (
-            <div key={attachment.id} className="flex items-center justify-between p-2 bg-gray-50 rounded border">
-              <div className="flex items-center gap-2 flex-1 min-w-0">
-                <span className="text-lg">{getFileIcon(attachment.file_type)}</span>
+            <div 
+              key={attachment.id} 
+              className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+            >
+              <div className="flex items-center gap-3 flex-1 min-w-0">
+                {getFileIcon(attachment.file_type)}
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium truncate">{attachment.file_name}</div>
-                  <div className="text-xs text-gray-500">{formatFileSize(attachment.file_size)}</div>
+                  <p className="text-sm font-medium truncate">{attachment.file_name}</p>
+                  <div className="flex items-center gap-2 text-xs text-gray-600">
+                    <span>{formatFileSize(attachment.file_size)}</span>
+                    <Badge variant="secondary" className="text-xs">
+                      {attachment.file_type.split('/')[1]?.toUpperCase() || 'FILE'}
+                    </Badge>
+                  </div>
                 </div>
               </div>
-              
-              <div className="flex gap-1">
+              <div className="flex items-center gap-1">
                 <Button
                   size="sm"
                   variant="ghost"
-                  onClick={() => window.open(getFileUrl(attachment.file_path), '_blank')}
+                  onClick={() => handleDownload(attachment)}
                 >
-                  <Download className="w-3 h-3" />
+                  <Download className="w-4 h-4" />
                 </Button>
-                {isEditing && (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => deleteAttachment(attachment)}
-                  >
-                    <Trash2 className="w-3 h-3" />
-                  </Button>
-                )}
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => deleteAttachment(attachment)}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
               </div>
             </div>
           ))}
