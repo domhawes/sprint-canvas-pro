@@ -171,6 +171,41 @@ export const useKanbanBoard = (projectId: string) => {
     }
   };
 
+  const updateTask = async (taskId: string, taskData: {
+    title?: string;
+    description?: string;
+    column_id?: string;
+    priority?: 'low' | 'medium' | 'high';
+    due_date?: string;
+    category_id?: string;
+  }) => {
+    try {
+      const { data, error } = await supabase
+        .from('tasks')
+        .update(taskData)
+        .eq('id', taskId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      toast({
+        title: "Task updated",
+        description: "Task has been updated successfully.",
+      });
+
+      return data;
+    } catch (error: any) {
+      console.log('Error updating task:', error);
+      toast({
+        title: "Error updating task",
+        description: error.message,
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
   useEffect(() => {
     fetchBoardData();
   }, [projectId, user]);
@@ -180,6 +215,7 @@ export const useKanbanBoard = (projectId: string) => {
     loading,
     moveTask,
     createTask,
+    updateTask,
     refetch: fetchBoardData,
   };
 };

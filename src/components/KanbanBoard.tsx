@@ -12,7 +12,7 @@ const KanbanBoard = ({ projectId }) => {
   const [selectedTask, setSelectedTask] = useState(null);
   const [selectedColumnId, setSelectedColumnId] = useState(null);
   const [draggedTask, setDraggedTask] = useState(null);
-  const { columns, loading, moveTask, createTask, refetch } = useKanbanBoard(projectId);
+  const { columns, loading, moveTask, createTask, updateTask, refetch } = useKanbanBoard(projectId);
 
   console.log('KanbanBoard render state:', { 
     showTaskModal, 
@@ -31,8 +31,9 @@ const KanbanBoard = ({ projectId }) => {
   const handleTaskSave = async (taskData) => {
     console.log('Saving task:', taskData);
     try {
-      // For editing existing tasks, we would need an updateTask function
-      // For now, just close the modal and refetch
+      if (updateTask) {
+        await updateTask(taskData.id, taskData);
+      }
       setShowTaskModal(false);
       setSelectedTask(null);
       setSelectedColumnId(null);

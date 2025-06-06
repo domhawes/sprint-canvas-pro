@@ -61,7 +61,7 @@ const TaskModal = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('TaskModal handleSubmit', { title, columnId, isEditing });
+    console.log('TaskModal handleSubmit', { title, description, columnId, isEditing });
     
     if (!title.trim()) {
       console.log('No title provided');
@@ -80,6 +80,7 @@ const TaskModal = ({
     console.log('Submitting task data:', taskData);
 
     if (isEditing) {
+      // For editing, pass the complete task object with updates
       onSave({ ...task, ...taskData });
     } else if (onCreate) {
       onCreate(taskData);
