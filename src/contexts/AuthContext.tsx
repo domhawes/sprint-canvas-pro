@@ -30,11 +30,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const { toast } = useToast();
 
   useEffect(() => {
+    let mounted = true;
+
+    // Clear any existing auth state on mount
+    const clearAuthState = () => {
+      if (mounted) {
+        setUser(null);
+        setSession(null);
+      }
+    };
+
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('Auth state change:', event, session?.user?.email);
+        
+        if (!mounted) return;
+
+        if (event === 'SIGNED_OUT' || !session) {
+          setSession(null);
+          setUser(null);
+          setLoading(false);
+          return;
+        }
+
         setSession(session);
-        setUser(session?.user ?? null);
+        setUser(session.user);
         setLoading(false);
 
         // Track login events
@@ -54,12 +75,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!mounted) return;
+      
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signUp = async (email: string, password: string, fullName?: string) => {
@@ -124,8 +150,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
+    try {
+      console.log('Starting sign out process...');
+      
+      // Clear local state immediately
+      setUser(null);
+      setSession(null);
+      
+      // Sign out from Supabase
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        console.error('Sign out error:', error);
+        toast({
+          title: "Sign out failed",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        console.log('Sign out successful');
+        toast({
+          title: "Signed out",
+          description: "You have been successfully signed out.",
+        });
+      }
+    } catch (error: any) {
+      console.error('Sign out error:', error);
       toast({
         title: "Sign out failed",
         description: error.message,

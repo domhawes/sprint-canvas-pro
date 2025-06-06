@@ -17,8 +17,14 @@ const Navbar = ({ currentView, onBackToDashboard, selectedProject, onProjectAdmi
 
   const handleSignOut = async () => {
     try {
+      console.log('Navbar: Starting sign out...');
       await signOut();
-      navigate('/auth');
+      
+      // Force navigation to auth page
+      setTimeout(() => {
+        navigate('/auth', { replace: true });
+        window.location.reload(); // Force a complete reload to clear any cached state
+      }, 100);
     } catch (error) {
       console.error('Error signing out:', error);
     }

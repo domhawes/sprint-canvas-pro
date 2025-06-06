@@ -25,21 +25,25 @@ export const useProjects = () => {
 
   const fetchProjects = async () => {
     if (!user) {
+      console.log('No user, clearing projects');
+      setProjects([]);
       setLoading(false);
       return;
     }
 
     try {
       console.log('Fetching projects for user:', user.id);
+      setLoading(true);
       
-      // Simplified query: get projects where user is a member
+      // Get projects where user is a member
       const { data: projectsData, error: projectsError } = await supabase
         .from('projects')
         .select(`
           *,
           project_members!inner(user_id)
         `)
-        .eq('project_members.user_id', user.id);
+        .eq('project_members.user_id', user.id)
+        .order('created_at', { ascending: false });
 
       if (projectsError) {
         console.error('Error fetching projects:', projectsError);
@@ -48,7 +52,7 @@ export const useProjects = () => {
 
       console.log('Projects data:', projectsData);
 
-      // Simple project mapping without complex stats for now
+      // Simple project mapping
       const projectsWithStats = projectsData?.map(project => ({
         ...project,
         memberCount: 1,
@@ -65,24 +69,31 @@ export const useProjects = () => {
         description: error.message,
         variant: "destructive",
       });
+      setProjects([]);
     } finally {
       setLoading(false);
     }
   };
 
   const createProject = async (projectData: { name: string; description: string; color: string }) => {
-    if (!user) return;
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "Please log in to create a project.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     try {
       console.log('Creating project:', projectData);
-      console.log('Current user:', user);
       
       // First, ensure the user profile exists
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('id')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
 
       if (profileError && profileError.code !== 'PGRST116') {
         console.error('Error checking user profile:', profileError);
@@ -169,7 +180,8 @@ export const useProjects = () => {
         description: "Your new project has been created successfully.",
       });
 
-      fetchProjects();
+      // Refresh projects list
+      await fetchProjects();
       return project;
     } catch (error: any) {
       console.error('Error in createProject:', error);
@@ -182,8 +194,11 @@ export const useProjects = () => {
   };
 
   useEffect(() => {
-    // Only fetch projects if user is defined (either authenticated or null)
-    if (user !== undefined) {
+    // Clear projects when user changes
+    if (user === null) {
+      setProjects([]);
+      setLoading(false);
+    } else if (user) {
       fetchProjects();
     }
   }, [user]);
