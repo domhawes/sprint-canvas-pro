@@ -33,12 +33,12 @@ const TaskModal = ({
   onCreate,
   projectId 
 }: TaskModalProps) => {
-  const [title, setTitle] = useState(task?.title || '');
-  const [description, setDescription] = useState(task?.description || '');
-  const [columnId, setColumnId] = useState(task?.column_id || preselectedColumnId || columns[0]?.id);
-  const [priority, setPriority] = useState(task?.priority || 'medium');
-  const [dueDate, setDueDate] = useState(task?.due_date ? new Date(task.due_date) : undefined);
-  const [categoryId, setCategoryId] = useState(task?.category_id || '');
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [columnId, setColumnId] = useState('');
+  const [priority, setPriority] = useState('medium');
+  const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
+  const [categoryId, setCategoryId] = useState('');
   const [showCalendar, setShowCalendar] = useState(false);
   const [showAttachments, setShowAttachments] = useState(false);
   
@@ -46,12 +46,35 @@ const TaskModal = ({
   
   const isEditing = !!task;
 
+  // Initialize form data when task or columns change
+  useEffect(() => {
+    if (task) {
+      setTitle(task.title || '');
+      setDescription(task.description || '');
+      setColumnId(task.column_id || '');
+      setPriority(task.priority || 'medium');
+      setDueDate(task.due_date ? new Date(task.due_date) : undefined);
+      setCategoryId(task.category_id || '');
+    } else {
+      setTitle('');
+      setDescription('');
+      setColumnId(preselectedColumnId || (columns.length > 0 ? columns[0].id : ''));
+      setPriority('medium');
+      setDueDate(undefined);
+      setCategoryId('');
+    }
+  }, [task, preselectedColumnId, columns]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (!title.trim()) {
+      return;
+    }
+
     const taskData = {
-      title,
-      description,
+      title: title.trim(),
+      description: description.trim(),
       column_id: columnId,
       priority,
       due_date: dueDate ? format(dueDate, 'yyyy-MM-dd') : null,
@@ -64,6 +87,20 @@ const TaskModal = ({
       onCreate(taskData);
     }
   };
+
+  if (!columns || columns.length === 0) {
+    return (
+      <Dialog open onOpenChange={onClose}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Error</DialogTitle>
+          </DialogHeader>
+          <p>No columns available. Please create columns first.</p>
+          <Button onClick={onClose}>Close</Button>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open onOpenChange={onClose}>

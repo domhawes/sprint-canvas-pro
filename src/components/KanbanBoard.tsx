@@ -12,20 +12,23 @@ const KanbanBoard = ({ projectId }) => {
   const [selectedTask, setSelectedTask] = useState(null);
   const [selectedColumnId, setSelectedColumnId] = useState(null);
   const [draggedTask, setDraggedTask] = useState(null);
-  const { columns, loading, moveTask, createTask } = useKanbanBoard(projectId);
+  const { columns, loading, moveTask, createTask, refetch } = useKanbanBoard(projectId);
 
   const handleTaskClick = (task) => {
+    console.log('Task clicked:', task);
     setSelectedTask(task);
     setSelectedColumnId(null);
     setShowTaskModal(true);
   };
 
-  const handleTaskSave = (taskData) => {
-    // This would update the task in the database
+  const handleTaskSave = async (taskData) => {
     console.log('Saving task:', taskData);
+    // For editing existing tasks, we would need an updateTask function
+    // For now, just close the modal and refetch
     setShowTaskModal(false);
     setSelectedTask(null);
     setSelectedColumnId(null);
+    await refetch();
   };
 
   const handleDragStart = (task) => {
@@ -43,18 +46,21 @@ const KanbanBoard = ({ projectId }) => {
   };
 
   const handleCreateTask = () => {
+    console.log('Creating new task');
     setSelectedTask(null);
     setSelectedColumnId(null);
     setShowTaskModal(true);
   };
 
   const handleAddCard = (columnId) => {
+    console.log('Adding card to column:', columnId);
     setSelectedTask(null);
     setSelectedColumnId(columnId);
     setShowTaskModal(true);
   };
 
   const handleCreateTaskInColumn = async (taskData) => {
+    console.log('Creating task in column:', taskData);
     const taskWithColumn = {
       ...taskData,
       column_id: selectedColumnId || taskData.column_id
@@ -66,11 +72,28 @@ const KanbanBoard = ({ projectId }) => {
     setSelectedColumnId(null);
   };
 
+  const handleCloseModal = () => {
+    console.log('Closing modal');
+    setShowTaskModal(false);
+    setSelectedTask(null);
+    setSelectedColumnId(null);
+  };
+
   if (loading) {
     return (
       <div className="flex-1 p-6">
         <div className="text-center py-12">
           <p className="text-gray-600">Loading board...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!columns || columns.length === 0) {
+    return (
+      <div className="flex-1 p-6">
+        <div className="text-center py-12">
+          <p className="text-gray-600">No columns found. Please create columns first.</p>
         </div>
       </div>
     );
@@ -113,11 +136,7 @@ const KanbanBoard = ({ projectId }) => {
           columns={columns}
           preselectedColumnId={selectedColumnId}
           onSave={handleTaskSave}
-          onClose={() => {
-            setShowTaskModal(false);
-            setSelectedTask(null);
-            setSelectedColumnId(null);
-          }}
+          onClose={handleCloseModal}
           onCreate={selectedColumnId ? handleCreateTaskInColumn : createTask}
           projectId={projectId}
         />
