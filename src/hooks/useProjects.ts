@@ -32,34 +32,14 @@ export const useProjects = () => {
     try {
       console.log('Fetching projects for user:', user.id);
       
-      // First, get the project IDs that the user is a member of
-      const { data: membershipData, error: membershipError } = await supabase
-        .from('project_members')
-        .select('project_id')
-        .eq('user_id', user.id);
-
-      if (membershipError) {
-        console.error('Error fetching project memberships:', membershipError);
-        throw membershipError;
-      }
-
-      console.log('User memberships:', membershipData);
-
-      if (!membershipData || membershipData.length === 0) {
-        console.log('No project memberships found');
-        setProjects([]);
-        setLoading(false);
-        return;
-      }
-
-      const projectIds = membershipData.map(m => m.project_id);
-      console.log('Project IDs:', projectIds);
-
-      // Then fetch the projects using the project IDs
+      // Simplified query: get projects where user is a member
       const { data: projectsData, error: projectsError } = await supabase
         .from('projects')
-        .select('*')
-        .in('id', projectIds);
+        .select(`
+          *,
+          project_members!inner(user_id)
+        `)
+        .eq('project_members.user_id', user.id);
 
       if (projectsError) {
         console.error('Error fetching projects:', projectsError);
@@ -68,28 +48,13 @@ export const useProjects = () => {
 
       console.log('Projects data:', projectsData);
 
-      // Fetch tasks for these projects to calculate stats
-      const { data: tasksData, error: tasksError } = await supabase
-        .from('tasks')
-        .select('id, project_id, column_id')
-        .in('project_id', projectIds);
-
-      if (tasksError) {
-        console.error('Error fetching tasks:', tasksError);
-        // Don't throw here, just log the error and continue without task stats
-      }
-
-      console.log('Tasks data:', tasksData);
-
-      const projectsWithStats = projectsData?.map(project => {
-        const projectTasks = tasksData?.filter(task => task.project_id === project.id) || [];
-        return {
-          ...project,
-          memberCount: 1, // For now, we'll keep this simple
-          taskCount: projectTasks.length,
-          completedTasks: 0, // Will be calculated when we have column data
-        };
-      }) || [];
+      // Simple project mapping without complex stats for now
+      const projectsWithStats = projectsData?.map(project => ({
+        ...project,
+        memberCount: 1,
+        taskCount: 0,
+        completedTasks: 0,
+      })) || [];
 
       console.log('Projects with stats:', projectsWithStats);
       setProjects(projectsWithStats);

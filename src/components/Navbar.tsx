@@ -16,9 +16,16 @@ const Navbar = ({ currentView, onBackToDashboard, selectedProject, onProjectAdmi
   const navigate = useNavigate();
 
   const handleSignOut = async () => {
-    await signOut();
-    navigate('/auth');
+    try {
+      await signOut();
+      navigate('/auth');
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
   };
+
+  // Check if user has admin role (simplified check)
+  const isAdmin = user?.user_metadata?.role === 'admin' || user?.email?.includes('admin');
 
   return (
     <nav className="bg-white border-b border-gray-200 px-6 py-4">
@@ -59,15 +66,17 @@ const Navbar = ({ currentView, onBackToDashboard, selectedProject, onProjectAdmi
         </div>
 
         <div className="flex items-center space-x-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate('/crm')}
-            className="flex items-center gap-2"
-          >
-            <BarChart3 className="w-4 h-4" />
-            CRM & Analytics
-          </Button>
+          {isAdmin && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate('/crm')}
+              className="flex items-center gap-2"
+            >
+              <BarChart3 className="w-4 h-4" />
+              CRM & Analytics
+            </Button>
+          )}
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -77,14 +86,18 @@ const Navbar = ({ currentView, onBackToDashboard, selectedProject, onProjectAdmi
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => navigate('/crm')}>
-                <User className="w-4 h-4 mr-2" />
-                Profile & Analytics
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate('/admin')}>
-                <Settings className="w-4 h-4 mr-2" />
-                Admin Panel
-              </DropdownMenuItem>
+              {isAdmin && (
+                <>
+                  <DropdownMenuItem onClick={() => navigate('/crm')}>
+                    <User className="w-4 h-4 mr-2" />
+                    Profile & Analytics
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate('/admin')}>
+                    <Settings className="w-4 h-4 mr-2" />
+                    Admin Panel
+                  </DropdownMenuItem>
+                </>
+              )}
               <DropdownMenuItem onClick={handleSignOut}>
                 Sign Out
               </DropdownMenuItem>
