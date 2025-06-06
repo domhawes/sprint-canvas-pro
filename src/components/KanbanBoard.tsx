@@ -14,6 +14,13 @@ const KanbanBoard = ({ projectId }) => {
   const [draggedTask, setDraggedTask] = useState(null);
   const { columns, loading, moveTask, createTask, refetch } = useKanbanBoard(projectId);
 
+  console.log('KanbanBoard render state:', { 
+    showTaskModal, 
+    selectedTask, 
+    selectedColumnId,
+    columnsCount: columns?.length 
+  });
+
   const handleTaskClick = (task) => {
     console.log('Task clicked:', task);
     setSelectedTask(task);
@@ -23,12 +30,16 @@ const KanbanBoard = ({ projectId }) => {
 
   const handleTaskSave = async (taskData) => {
     console.log('Saving task:', taskData);
-    // For editing existing tasks, we would need an updateTask function
-    // For now, just close the modal and refetch
-    setShowTaskModal(false);
-    setSelectedTask(null);
-    setSelectedColumnId(null);
-    await refetch();
+    try {
+      // For editing existing tasks, we would need an updateTask function
+      // For now, just close the modal and refetch
+      setShowTaskModal(false);
+      setSelectedTask(null);
+      setSelectedColumnId(null);
+      await refetch();
+    } catch (error) {
+      console.error('Error saving task:', error);
+    }
   };
 
   const handleDragStart = (task) => {
@@ -61,15 +72,19 @@ const KanbanBoard = ({ projectId }) => {
 
   const handleCreateTaskInColumn = async (taskData) => {
     console.log('Creating task in column:', taskData);
-    const taskWithColumn = {
-      ...taskData,
-      column_id: selectedColumnId || taskData.column_id
-    };
-    
-    await createTask(taskWithColumn);
-    setShowTaskModal(false);
-    setSelectedTask(null);
-    setSelectedColumnId(null);
+    try {
+      const taskWithColumn = {
+        ...taskData,
+        column_id: selectedColumnId || taskData.column_id
+      };
+      
+      await createTask(taskWithColumn);
+      setShowTaskModal(false);
+      setSelectedTask(null);
+      setSelectedColumnId(null);
+    } catch (error) {
+      console.error('Error creating task:', error);
+    }
   };
 
   const handleCloseModal = () => {

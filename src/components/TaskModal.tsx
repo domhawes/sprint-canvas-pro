@@ -48,6 +48,7 @@ const TaskModal = ({
 
   // Initialize form data when task or columns change
   useEffect(() => {
+    console.log('TaskModal effect running', { task, preselectedColumnId, columns });
     if (task) {
       setTitle(task.title || '');
       setDescription(task.description || '');
@@ -67,8 +68,10 @@ const TaskModal = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('TaskModal handleSubmit', { title, columnId, isEditing });
     
     if (!title.trim()) {
+      console.log('No title provided');
       return;
     }
 
@@ -81,12 +84,16 @@ const TaskModal = ({
       category_id: categoryId || null,
     };
 
+    console.log('Submitting task data:', taskData);
+
     if (isEditing) {
       onSave({ ...task, ...taskData });
     } else if (onCreate) {
       onCreate(taskData);
     }
   };
+
+  console.log('TaskModal rendering', { columns, projectId, isEditing });
 
   if (!columns || columns.length === 0) {
     return (
