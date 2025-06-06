@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -223,7 +222,7 @@ const Auth = () => {
         if (!result.error) {
           // Check if user has MFA enabled
           const { data: factors } = await supabase.auth.mfa.listFactors();
-          if (factors && factors.length > 0) {
+          if (factors && factors.all && factors.all.length > 0) {
             setIs2FAStep(true);
             return;
           }
