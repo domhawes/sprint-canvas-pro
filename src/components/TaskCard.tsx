@@ -24,6 +24,7 @@ const TaskCard = ({ task, onClick, onDragStart }) => {
       onDragStart={onDragStart}
       onClick={onClick}
       className="bg-white rounded-lg p-4 shadow-sm border border-gray-200 hover:shadow-md transition-all duration-200 cursor-pointer group"
+      style={task.category?.color ? { borderLeftColor: task.category.color, borderLeftWidth: '4px' } : {}}
     >
       <div className="flex items-start justify-between mb-3">
         <h4 className="font-medium text-gray-900 group-hover:text-blue-600 transition-colors">
@@ -34,6 +35,15 @@ const TaskCard = ({ task, onClick, onDragStart }) => {
           {task.priority}
         </div>
       </div>
+
+      {task.category && (
+        <div 
+          className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium mb-2"
+          style={{ backgroundColor: task.category.color + '20', color: task.category.color }}
+        >
+          {task.category.name}
+        </div>
+      )}
 
       {task.description && (
         <p className="text-gray-600 text-sm mb-3 line-clamp-2">

@@ -17,6 +17,12 @@ interface Task {
   created_by: string;
   created_at: string | null;
   updated_at: string | null;
+  category_id: string | null;
+  category?: {
+    id: string;
+    name: string;
+    color: string;
+  };
 }
 
 interface Column {
@@ -47,10 +53,13 @@ export const useKanbanBoard = (projectId: string) => {
 
       if (columnsError) throw columnsError;
 
-      // Fetch tasks without the problematic profile join
+      // Fetch tasks with category information
       const { data: tasksData, error: tasksError } = await supabase
         .from('tasks')
-        .select('*')
+        .select(`
+          *,
+          category:task_categories(id, name, color)
+        `)
         .eq('project_id', projectId)
         .order('position');
 
@@ -128,6 +137,7 @@ export const useKanbanBoard = (projectId: string) => {
     column_id: string;
     priority?: 'low' | 'medium' | 'high';
     due_date?: string;
+    category_id?: string;
   }) => {
     if (!user) return;
 

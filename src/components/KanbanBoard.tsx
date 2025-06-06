@@ -4,6 +4,7 @@ import { Plus } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import KanbanColumn from './KanbanColumn';
 import TaskModal from './TaskModal';
+import TaskCategoriesManager from './TaskCategoriesManager';
 import { useKanbanBoard } from '@/hooks/useKanbanBoard';
 
 const KanbanBoard = ({ projectId }) => {
@@ -80,13 +81,16 @@ const KanbanBoard = ({ projectId }) => {
       <div className="mb-6">
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-bold text-gray-900">Project Board</h2>
-          <Button 
-            onClick={handleCreateTask}
-            className="bg-blue-600 hover:bg-blue-700 text-white"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Add Task
-          </Button>
+          <div className="flex gap-3">
+            <TaskCategoriesManager projectId={projectId} />
+            <Button 
+              onClick={handleCreateTask}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Add Task
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -115,6 +119,7 @@ const KanbanBoard = ({ projectId }) => {
             setSelectedColumnId(null);
           }}
           onCreate={selectedColumnId ? handleCreateTaskInColumn : createTask}
+          projectId={projectId}
         />
       )}
     </div>

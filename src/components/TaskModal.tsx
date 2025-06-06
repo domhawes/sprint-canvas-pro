@@ -1,9 +1,12 @@
+
 import React, { useState } from 'react';
 import { X, Calendar, User, Flag, Tag } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import TaskAttachments from './TaskAttachments';
+import { useTaskCategories } from '@/hooks/useTaskCategories';
 
 interface TaskModalProps {
   task?: any;
@@ -12,9 +15,11 @@ interface TaskModalProps {
   onSave: (taskData: any) => void;
   onClose: () => void;
   onCreate?: (taskData: any) => Promise<any>;
+  projectId: string;
 }
 
-const TaskModal = ({ task, columns, preselectedColumnId, onSave, onClose, onCreate }: TaskModalProps) => {
+const TaskModal = ({ task, columns, preselectedColumnId, onSave, onClose, onCreate, projectId }: TaskModalProps) => {
+  const { categories } = useTaskCategories(projectId);
   const [formData, setFormData] = useState({
     id: task?.id || Date.now(),
     title: task?.title || '',
@@ -23,6 +28,7 @@ const TaskModal = ({ task, columns, preselectedColumnId, onSave, onClose, onCrea
     assignee: task?.assignee?.full_name || '',
     due_date: task?.due_date || '',
     priority: task?.priority || 'medium',
+    category_id: task?.category_id || '',
     tags: task?.tags || []
   });
 
@@ -40,6 +46,7 @@ const TaskModal = ({ task, columns, preselectedColumnId, onSave, onClose, onCrea
         column_id: formData.column_id,
         priority: formData.priority as 'low' | 'medium' | 'high',
         due_date: formData.due_date || undefined,
+        category_id: formData.category_id || undefined,
       });
       onClose();
     }
@@ -134,6 +141,34 @@ const TaskModal = ({ task, columns, preselectedColumnId, onSave, onClose, onCrea
             </div>
           )}
 
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Category
+            </label>
+            <Select
+              value={formData.category_id}
+              onValueChange={(value) => setFormData(prev => ({ ...prev, category_id: value }))}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select a category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">No category</SelectItem>
+                {categories.map((category) => (
+                  <SelectItem key={category.id} value={category.id}>
+                    <div className="flex items-center gap-2">
+                      <div 
+                        className="w-3 h-3 rounded-full" 
+                        style={{ backgroundColor: category.color }}
+                      />
+                      {category.name}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -179,6 +214,10 @@ const TaskModal = ({ task, columns, preselectedColumnId, onSave, onClose, onCrea
               </SelectContent>
             </Select>
           </div>
+
+          {task && (
+            <TaskAttachments taskId={task.id} isEditing={true} />
+          )}
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
