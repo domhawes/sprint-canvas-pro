@@ -22,12 +22,12 @@ const Auth = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [otpCode, setOtpCode] = useState('');
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
   const {
-    loading,
+    loading: authLoading,
     setLoading,
     linkedinLoading,
     handleForgotPassword,
@@ -38,20 +38,39 @@ const Auth = () => {
     signUp,
   } = useAuthHandlers();
 
+  // Handle user authentication redirect
   useEffect(() => {
-    if (user) {
+    if (!loading && user) {
       console.log('User authenticated, redirecting to dashboard...');
-      navigate('/');
+      navigate('/', { replace: true });
     }
-  }, [user, navigate]);
+  }, [user, loading, navigate]);
 
+  // Handle password recovery from URL
   useEffect(() => {
     const type = searchParams.get('type');
     if (type === 'recovery') {
       console.log('Password recovery detected, showing reset form');
       setIsPasswordReset(true);
+      setIsForgotPassword(false);
+      setIs2FAStep(false);
+      setIsSignUp(false);
     }
   }, [searchParams]);
+
+  // Show loading spinner while auth is initializing
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center p-4">
+        <div className="text-center">
+          <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center mx-auto mb-4">
+            <span className="text-white font-bold">K</span>
+          </div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,6 +80,8 @@ const Auth = () => {
       isPasswordReset, 
       isSignUp 
     });
+    
+    if (authLoading) return; // Prevent double submission
     
     setLoading(true);
 
@@ -87,8 +108,7 @@ const Auth = () => {
           setIsPasswordReset(false);
           setPassword('');
           setConfirmPassword('');
-          // Skip 2FA for now and go directly to dashboard
-          navigate('/');
+          navigate('/', { replace: true });
         }
       } else if (isSignUp) {
         console.log('Processing sign up');
@@ -96,7 +116,7 @@ const Auth = () => {
       } else {
         console.log('Processing sign in');
         const result = await handleSignIn(email, password);
-        if (result.requires2FA) {
+        if (result?.requires2FA) {
           setIs2FAStep(true);
         }
       }
@@ -129,6 +149,10 @@ const Auth = () => {
     setIs2FAStep(false);
     setIsSignUp(false);
     setOtpCode('');
+    setPassword('');
+    setConfirmPassword('');
+    setEmail('');
+    setFullName('');
   };
 
   const renderForm = () => {
@@ -136,7 +160,7 @@ const Auth = () => {
       return (
         <TwoFactorForm
           otpCode={otpCode}
-          loading={loading}
+          loading={authLoading}
           onOtpChange={setOtpCode}
           onSubmit={handleSubmit}
         />
@@ -147,7 +171,7 @@ const Auth = () => {
       return (
         <ForgotPasswordForm
           email={email}
-          loading={loading}
+          loading={authLoading}
           onEmailChange={setEmail}
           onSubmit={handleSubmit}
         />
@@ -159,7 +183,7 @@ const Auth = () => {
         <PasswordResetForm
           password={password}
           confirmPassword={confirmPassword}
-          loading={loading}
+          loading={authLoading}
           onPasswordChange={setPassword}
           onConfirmPasswordChange={setConfirmPassword}
           onSubmit={handleSubmit}
@@ -173,7 +197,7 @@ const Auth = () => {
         password={password}
         fullName={fullName}
         isSignUp={isSignUp}
-        loading={loading}
+        loading={authLoading}
         onEmailChange={setEmail}
         onPasswordChange={setPassword}
         onFullNameChange={setFullName}
