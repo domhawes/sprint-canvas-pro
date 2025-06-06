@@ -49,6 +49,60 @@ export const useAuthHandlers = () => {
     }
   };
 
+  const handlePasswordReset = async (password: string, confirmPassword: string) => {
+    console.log('handlePasswordReset called with passwords');
+    
+    if (password !== confirmPassword) {
+      toast({
+        title: "Error",
+        description: "Passwords don't match",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    if (password.length < 6) {
+      toast({
+        title: "Error",
+        description: "Password must be at least 6 characters long",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    try {
+      console.log('Updating password in Supabase...');
+      const { error } = await supabase.auth.updateUser({
+        password: password
+      });
+
+      if (error) {
+        console.error('Password update error:', error);
+        toast({
+          title: "Error",
+          description: error.message,
+          variant: "destructive",
+        });
+        return false;
+      } else {
+        console.log('Password updated successfully');
+        toast({
+          title: "Success",
+          description: "Password updated successfully! You are now logged in.",
+        });
+        return true;
+      }
+    } catch (error: any) {
+      console.error('Password reset error:', error);
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+      return false;
+    }
+  };
+
   const handleEnableMFA = async () => {
     try {
       const { data, error } = await supabase.auth.mfa.enroll({
@@ -118,46 +172,6 @@ export const useAuthHandlers = () => {
       });
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handlePasswordReset = async (password: string, confirmPassword: string) => {
-    if (password !== confirmPassword) {
-      toast({
-        title: "Error",
-        description: "Passwords don't match",
-        variant: "destructive",
-      });
-      return false;
-    }
-
-    if (password.length < 6) {
-      toast({
-        title: "Error",
-        description: "Password must be at least 6 characters long",
-        variant: "destructive",
-      });
-      return false;
-    }
-
-    const { error } = await supabase.auth.updateUser({
-      password: password
-    });
-
-    if (error) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-      return false;
-    } else {
-      toast({
-        title: "Success",
-        description: "Password updated successfully! Please enable 2FA for enhanced security.",
-      });
-      await handleEnableMFA();
-      return true;
     }
   };
 

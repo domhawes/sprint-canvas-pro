@@ -40,6 +40,7 @@ const Auth = () => {
 
   useEffect(() => {
     if (user) {
+      console.log('User authenticated, redirecting to dashboard...');
       navigate('/');
     }
   }, [user, navigate]);
@@ -47,43 +48,60 @@ const Auth = () => {
   useEffect(() => {
     const type = searchParams.get('type');
     if (type === 'recovery') {
+      console.log('Password recovery detected, showing reset form');
       setIsPasswordReset(true);
     }
   }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('Form submitted, current state:', { 
+      isForgotPassword, 
+      is2FAStep, 
+      isPasswordReset, 
+      isSignUp 
+    });
+    
     setLoading(true);
 
     try {
       if (isForgotPassword) {
+        console.log('Processing forgot password request');
         await handleForgotPassword(email);
         setIsForgotPassword(false);
         return;
       }
 
       if (is2FAStep) {
+        console.log('Processing 2FA verification');
         await handleVerifyMFA(otpCode);
         setIs2FAStep(false);
         return;
       }
 
       if (isPasswordReset) {
+        console.log('Processing password reset');
         const success = await handlePasswordReset(password, confirmPassword);
         if (success) {
+          console.log('Password reset successful, redirecting to dashboard');
           setIsPasswordReset(false);
           setPassword('');
           setConfirmPassword('');
-          setIs2FAStep(true);
+          // Skip 2FA for now and go directly to dashboard
+          navigate('/');
         }
       } else if (isSignUp) {
+        console.log('Processing sign up');
         await signUp(email, password, fullName);
       } else {
+        console.log('Processing sign in');
         const result = await handleSignIn(email, password);
         if (result.requires2FA) {
           setIs2FAStep(true);
         }
       }
+    } catch (error) {
+      console.error('Auth error:', error);
     } finally {
       setLoading(false);
     }
@@ -98,7 +116,7 @@ const Auth = () => {
 
   const getDescription = () => {
     if (isForgotPassword) return 'Enter your email to receive a password reset link';
-    if (isPasswordReset) return 'Enter your new password and enable 2FA';
+    if (isPasswordReset) return 'Enter your new password to continue';
     if (is2FAStep) return 'Enter the 6-digit code from your authenticator app';
     return isSignUp 
       ? 'Create your account to get started' 

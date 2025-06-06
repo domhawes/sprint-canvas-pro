@@ -33,6 +33,7 @@ export const PasswordResetForm: React.FC<PasswordResetFormProps> = ({
           onChange={(e) => onPasswordChange(e.target.value)}
           required
           minLength={6}
+          disabled={loading}
         />
       </div>
       <div className="space-y-2">
@@ -45,11 +46,12 @@ export const PasswordResetForm: React.FC<PasswordResetFormProps> = ({
           onChange={(e) => onConfirmPasswordChange(e.target.value)}
           required
           minLength={6}
+          disabled={loading}
         />
       </div>
       
       <Button type="submit" className="w-full" disabled={loading}>
-        {loading ? 'Loading...' : 'Update Password & Enable 2FA'}
+        {loading ? 'Updating Password...' : 'Update Password'}
       </Button>
     </form>
   );
