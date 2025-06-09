@@ -41,29 +41,87 @@ const TaskModal = ({
   const { members } = useProjectMembers(projectId);
   
   const isEditing = !!task;
+  const storageKey = `task-form-${projectId}-${task?.id || 'new'}`;
+
+  // Save form data to localStorage whenever any field changes
+  const saveFormData = (data: any) => {
+    if (!isEditing) { // Only persist for new tasks
+      localStorage.setItem(storageKey, JSON.stringify(data));
+    }
+  };
+
+  // Load form data from localStorage
+  const loadFormData = () => {
+    if (!isEditing) {
+      const saved = localStorage.getItem(storageKey);
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch (e) {
+          console.log('Error parsing saved form data:', e);
+        }
+      }
+    }
+    return null;
+  };
+
+  // Clear form data from localStorage
+  const clearFormData = () => {
+    localStorage.removeItem(storageKey);
+  };
 
   // Initialize form data when task or columns change
   useEffect(() => {
     console.log('TaskModal effect running', { task, preselectedColumnId, columns });
+    
     if (task) {
+      // Editing existing task - use task data
       setTitle(task.title || '');
       setDescription(task.description || '');
       setColumnId(task.column_id || '');
       setPriority(task.priority || 'medium');
       setDueDate(task.due_date ? new Date(task.due_date) : undefined);
-      // Fix category ID handling - ensure we properly handle null/undefined values
       setCategoryId(task.category_id && task.category_id.trim() !== '' ? task.category_id : 'none');
       setAssigneeId(task.assignee_id && task.assignee_id.trim() !== '' ? task.assignee_id : 'none');
     } else {
-      setTitle('');
-      setDescription('');
-      setColumnId(preselectedColumnId || (columns.length > 0 ? columns[0].id : ''));
-      setPriority('medium');
-      setDueDate(undefined);
-      setCategoryId('none');
-      setAssigneeId('none');
+      // Creating new task - try to load from localStorage first
+      const savedData = loadFormData();
+      if (savedData) {
+        setTitle(savedData.title || '');
+        setDescription(savedData.description || '');
+        setColumnId(savedData.columnId || preselectedColumnId || (columns.length > 0 ? columns[0].id : ''));
+        setPriority(savedData.priority || 'medium');
+        setDueDate(savedData.dueDate ? new Date(savedData.dueDate) : undefined);
+        setCategoryId(savedData.categoryId || 'none');
+        setAssigneeId(savedData.assigneeId || 'none');
+      } else {
+        // Default values for new task
+        setTitle('');
+        setDescription('');
+        setColumnId(preselectedColumnId || (columns.length > 0 ? columns[0].id : ''));
+        setPriority('medium');
+        setDueDate(undefined);
+        setCategoryId('none');
+        setAssigneeId('none');
+      }
     }
   }, [task, preselectedColumnId, columns]);
+
+  // Save form data whenever any field changes (for new tasks only)
+  useEffect(() => {
+    if (!isEditing) {
+      const formData = {
+        title,
+        description,
+        columnId,
+        priority,
+        dueDate: dueDate?.toISOString(),
+        categoryId,
+        assigneeId
+      };
+      saveFormData(formData);
+    }
+  }, [title, description, columnId, priority, dueDate, categoryId, assigneeId, isEditing]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -91,7 +149,17 @@ const TaskModal = ({
       onSave(taskData);
     } else if (onCreate) {
       onCreate(taskData);
+      // Clear saved form data after successful creation
+      clearFormData();
     }
+  };
+
+  const handleClose = () => {
+    // Clear saved form data when closing without saving (for new tasks)
+    if (!isEditing) {
+      clearFormData();
+    }
+    onClose();
   };
 
   console.log('TaskModal rendering', { columns, projectId, isEditing, categoryId, assigneeId });
@@ -101,7 +169,7 @@ const TaskModal = ({
   return (
     <TaskModalDialog 
       isEditing={isEditing} 
-      onClose={onClose} 
+      onClose={handleClose} 
       hasColumns={hasColumns}
     >
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -136,7 +204,7 @@ const TaskModal = ({
 
         <TaskFormActions
           isEditing={isEditing}
-          onClose={onClose}
+          onClose={handleClose}
         />
       </form>
     </TaskModalDialog>
