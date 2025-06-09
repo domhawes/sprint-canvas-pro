@@ -11,8 +11,8 @@ export const useTaskSorting = (tasks: any[], sortBy: SortOption = 'urgency') => 
     if (!tasks) return [];
 
     return [...tasks].sort((a, b) => {
-      // Primary sort by urgency (priority)
-      if (sortBy === 'urgency' || sortBy === 'deadline') {
+      // Primary sort by urgency (priority + deadline)
+      if (sortBy === 'urgency') {
         const aPriority = priorityOrder[a.priority as keyof typeof priorityOrder] || 0;
         const bPriority = priorityOrder[b.priority as keyof typeof priorityOrder] || 0;
         
@@ -20,7 +20,7 @@ export const useTaskSorting = (tasks: any[], sortBy: SortOption = 'urgency') => 
           return bPriority - aPriority; // High priority first
         }
         
-        // Secondary sort by deadline if urgency is the same
+        // Secondary sort by deadline if priority is the same
         if (a.due_date && b.due_date) {
           return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
         }
