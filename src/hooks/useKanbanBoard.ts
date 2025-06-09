@@ -104,7 +104,7 @@ export const useKanbanBoard = (projectId: string) => {
           name: task.task_categories.name,
           color: task.task_categories.color
         } : undefined,
-        assignee: task.profiles ? {
+        assignee: (task.profiles && typeof task.profiles === 'object' && 'full_name' in task.profiles) ? {
           full_name: task.profiles.full_name,
           email: task.profiles.email,
           avatar_url: task.profiles.avatar_url

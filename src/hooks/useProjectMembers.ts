@@ -64,7 +64,7 @@ export const useProjectMembers = (projectId: string) => {
       const mappedMembers: ProjectMember[] = (data || []).map(member => ({
         user_id: member.user_id,
         role: member.role,
-        profile: member.profiles ? {
+        profile: (member.profiles && typeof member.profiles === 'object' && 'full_name' in member.profiles) ? {
           full_name: member.profiles.full_name,
           email: member.profiles.email,
           avatar_url: member.profiles.avatar_url
