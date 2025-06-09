@@ -1,11 +1,12 @@
 
 import React, { useState } from 'react';
-import { Settings, Users, Trash2, Edit, UserPlus } from 'lucide-react';
+import { Settings, Users, Trash2, Edit, UserPlus, Paperclip } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import ProjectAttachments from './ProjectAttachments';
 
 const ProjectAdmin = ({ project, onClose, onProjectUpdated }) => {
   const [projectName, setProjectName] = useState(project?.name || '');
@@ -89,7 +90,7 @@ const ProjectAdmin = ({ project, onClose, onProjectUpdated }) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-lg max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
@@ -144,6 +145,9 @@ const ProjectAdmin = ({ project, onClose, onProjectUpdated }) => {
               </Button>
             </CardContent>
           </Card>
+
+          {/* Project Attachments */}
+          <ProjectAttachments projectId={project.id} />
 
           {/* Project Members */}
           <Card>
