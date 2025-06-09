@@ -1,12 +1,13 @@
 
 import React, { useState } from 'react';
-import { Settings, Users, Trash2, Edit, UserPlus, Paperclip } from 'lucide-react';
+import { Settings, Trash2, Edit, Paperclip } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import ProjectAttachments from './ProjectAttachments';
+import ProjectMemberInvite from './ProjectMemberInvite';
 
 const ProjectAdmin = ({ project, onClose, onProjectUpdated }) => {
   const [projectName, setProjectName] = useState(project?.name || '');
@@ -150,32 +151,7 @@ const ProjectAdmin = ({ project, onClose, onProjectUpdated }) => {
           <ProjectAttachments projectId={project.id} />
 
           {/* Project Members */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Users className="w-5 h-5" />
-                <span>Team Members</span>
-              </CardTitle>
-              <CardDescription>
-                Manage project team members
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                <div>
-                  <p className="font-medium text-gray-900">You (Owner)</p>
-                  <p className="text-sm text-gray-600">Project creator and administrator</p>
-                </div>
-                <Button variant="outline" size="sm" disabled>
-                  <UserPlus className="w-4 h-4 mr-2" />
-                  Invite Members
-                </Button>
-              </div>
-              <p className="text-sm text-gray-500 mt-2">
-                Member invitation feature coming soon
-              </p>
-            </CardContent>
-          </Card>
+          <ProjectMemberInvite projectId={project.id} />
 
           {/* Danger Zone */}
           <Card className="border-red-200">
