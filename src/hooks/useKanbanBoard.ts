@@ -97,19 +97,25 @@ export const useKanbanBoard = (projectId: string) => {
       }
 
       // Map tasks with proper structure
-      const mappedTasks: Task[] = (tasksData || []).map(task => ({
-        ...task,
-        category: task.task_categories ? {
-          id: task.task_categories.id,
-          name: task.task_categories.name,
-          color: task.task_categories.color
-        } : undefined,
-        assignee: (task.profiles && typeof task.profiles === 'object' && 'full_name' in task.profiles) ? {
-          full_name: task.profiles.full_name,
-          email: task.profiles.email,
-          avatar_url: task.profiles.avatar_url
-        } : undefined
-      }));
+      const mappedTasks: Task[] = (tasksData || []).map(task => {
+        const profileData = task.profiles && typeof task.profiles === 'object' && 'full_name' in task.profiles 
+          ? task.profiles as { full_name?: string; email?: string; avatar_url?: string }
+          : null;
+
+        return {
+          ...task,
+          category: task.task_categories ? {
+            id: task.task_categories.id,
+            name: task.task_categories.name,
+            color: task.task_categories.color
+          } : undefined,
+          assignee: profileData ? {
+            full_name: profileData.full_name,
+            email: profileData.email,
+            avatar_url: profileData.avatar_url
+          } : undefined
+        };
+      });
 
       // Group tasks by column
       const columnsWithTasks: Column[] = columnsData?.map(column => ({

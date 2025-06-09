@@ -61,15 +61,21 @@ export const useProjectMembers = (projectId: string) => {
       }
 
       // Map members with proper structure
-      const mappedMembers: ProjectMember[] = (data || []).map(member => ({
-        user_id: member.user_id,
-        role: member.role,
-        profile: (member.profiles && typeof member.profiles === 'object' && 'full_name' in member.profiles) ? {
-          full_name: member.profiles.full_name,
-          email: member.profiles.email,
-          avatar_url: member.profiles.avatar_url
-        } : undefined
-      }));
+      const mappedMembers: ProjectMember[] = (data || []).map(member => {
+        const profileData = member.profiles && typeof member.profiles === 'object' && 'full_name' in member.profiles
+          ? member.profiles as { full_name?: string; email?: string; avatar_url?: string }
+          : null;
+
+        return {
+          user_id: member.user_id,
+          role: member.role,
+          profile: profileData ? {
+            full_name: profileData.full_name,
+            email: profileData.email,
+            avatar_url: profileData.avatar_url
+          } : undefined
+        };
+      });
 
       setMembers(mappedMembers);
     } catch (error: any) {
