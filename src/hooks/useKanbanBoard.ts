@@ -98,7 +98,7 @@ export const useKanbanBoard = (projectId: string) => {
 
       // Map tasks with proper structure
       const mappedTasks: Task[] = (tasksData || []).map(task => {
-        const profileData = task.profiles && task.profiles !== null && typeof task.profiles === 'object' && 'full_name' in task.profiles 
+        const profileData = task.profiles && task.profiles !== null && typeof task.profiles === 'object' && Object.prototype.hasOwnProperty.call(task.profiles, 'full_name')
           ? task.profiles as { full_name?: string; email?: string; avatar_url?: string }
           : null;
 
