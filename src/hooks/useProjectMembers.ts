@@ -25,12 +25,14 @@ export const useProjectMembers = (projectId: string) => {
 
     try {
       setLoading(true);
+      
+      // Try to fetch with profile join first
       const { data, error } = await supabase
         .from('project_members')
         .select(`
           user_id,
           role,
-          profile:profiles!project_members_user_id_fkey(
+          profiles!project_members_user_id_fkey(
             full_name,
             email,
             avatar_url
@@ -38,8 +40,38 @@ export const useProjectMembers = (projectId: string) => {
         `)
         .eq('project_id', projectId);
 
-      if (error) throw error;
-      setMembers(data || []);
+      if (error) {
+        console.log('Project members query error:', error);
+        // Fallback to fetch without profile join
+        const { data: fallbackData, error: fallbackError } = await supabase
+          .from('project_members')
+          .select('user_id, role')
+          .eq('project_id', projectId);
+
+        if (fallbackError) throw fallbackError;
+
+        const mappedMembers: ProjectMember[] = (fallbackData || []).map(member => ({
+          user_id: member.user_id,
+          role: member.role,
+          profile: undefined
+        }));
+
+        setMembers(mappedMembers);
+        return;
+      }
+
+      // Map members with proper structure
+      const mappedMembers: ProjectMember[] = (data || []).map(member => ({
+        user_id: member.user_id,
+        role: member.role,
+        profile: member.profiles ? {
+          full_name: member.profiles.full_name,
+          email: member.profiles.email,
+          avatar_url: member.profiles.avatar_url
+        } : undefined
+      }));
+
+      setMembers(mappedMembers);
     } catch (error: any) {
       console.log('Error fetching project members:', error);
       toast({

@@ -57,23 +57,64 @@ export const useKanbanBoard = (projectId: string) => {
 
       if (columnsError) throw columnsError;
 
-      // Fetch tasks with category and assignee information
+      // Fetch tasks with category and assignee information using explicit joins
       const { data: tasksData, error: tasksError } = await supabase
         .from('tasks')
         .select(`
           *,
-          category:task_categories(id, name, color),
-          assignee:profiles!tasks_assignee_id_fkey(full_name, email, avatar_url)
+          task_categories(id, name, color),
+          profiles!tasks_assignee_id_fkey(full_name, email, avatar_url)
         `)
         .eq('project_id', projectId)
         .order('position');
 
-      if (tasksError) throw tasksError;
+      if (tasksError) {
+        console.log('Tasks query error:', tasksError);
+        // Fallback to fetch tasks without joins
+        const { data: fallbackTasksData, error: fallbackError } = await supabase
+          .from('tasks')
+          .select('*')
+          .eq('project_id', projectId)
+          .order('position');
+
+        if (fallbackError) throw fallbackError;
+
+        // Map tasks with basic structure
+        const mappedTasks: Task[] = (fallbackTasksData || []).map(task => ({
+          ...task,
+          category: undefined,
+          assignee: undefined
+        }));
+
+        // Group tasks by column
+        const columnsWithTasks: Column[] = columnsData?.map(column => ({
+          ...column,
+          tasks: mappedTasks.filter(task => task.column_id === column.id),
+        })) || [];
+
+        setColumns(columnsWithTasks);
+        return;
+      }
+
+      // Map tasks with proper structure
+      const mappedTasks: Task[] = (tasksData || []).map(task => ({
+        ...task,
+        category: task.task_categories ? {
+          id: task.task_categories.id,
+          name: task.task_categories.name,
+          color: task.task_categories.color
+        } : undefined,
+        assignee: task.profiles ? {
+          full_name: task.profiles.full_name,
+          email: task.profiles.email,
+          avatar_url: task.profiles.avatar_url
+        } : undefined
+      }));
 
       // Group tasks by column
       const columnsWithTasks: Column[] = columnsData?.map(column => ({
         ...column,
-        tasks: (tasksData || []).filter(task => task.column_id === column.id),
+        tasks: mappedTasks.filter(task => task.column_id === column.id),
       })) || [];
 
       setColumns(columnsWithTasks);
