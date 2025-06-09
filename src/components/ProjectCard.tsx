@@ -2,9 +2,12 @@
 import React from 'react';
 import { Users, MoreHorizontal } from 'lucide-react';
 import { Button } from "@/components/ui/button";
+import { useProjectStats } from '@/hooks/useProjectStats';
 
 const ProjectCard = ({ project, onSelect }) => {
-  const progressPercentage = project.taskCount > 0 ? (project.completedTasks / project.taskCount) * 100 : 0;
+  const { data: stats, isLoading } = useProjectStats(project.id);
+  
+  const progressPercentage = stats?.taskCount > 0 ? (stats.completedTasks / stats.taskCount) * 100 : 0;
 
   return (
     <div 
@@ -33,7 +36,7 @@ const ProjectCard = ({ project, onSelect }) => {
         <div className="flex items-center justify-between text-sm">
           <span className="text-gray-600">Progress</span>
           <span className="font-medium text-gray-900">
-            {project.completedTasks}/{project.taskCount} tasks
+            {isLoading ? 'Loading...' : `${stats?.completedTasks || 0}/${stats?.taskCount || 0} tasks`}
           </span>
         </div>
         
@@ -47,7 +50,7 @@ const ProjectCard = ({ project, onSelect }) => {
         <div className="flex items-center justify-between">
           <div className="flex items-center text-gray-600 text-sm">
             <Users className="w-4 h-4 mr-1" />
-            {project.memberCount} members
+            {isLoading ? 'Loading...' : `${stats?.memberCount || 0} members`}
           </div>
           <div className="flex items-center text-gray-600 text-sm">
             <span>Created {new Date(project.created_at).toLocaleDateString()}</span>

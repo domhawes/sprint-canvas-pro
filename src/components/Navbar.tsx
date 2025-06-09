@@ -3,6 +3,7 @@ import React from 'react';
 import { ArrowLeft, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSiteImage } from '@/hooks/useSiteImages';
 
 interface NavbarProps {
   currentView: string;
@@ -13,6 +14,9 @@ interface NavbarProps {
 
 const Navbar = ({ currentView, onBackToDashboard, selectedProject, onProjectAdmin }: NavbarProps) => {
   const { signOut } = useAuth();
+  const { data: logoImage } = useSiteImage('kanbana-logo');
+
+  const logoSrc = logoImage?.file_path || "/lovable-uploads/1ae6e39e-b18f-4f6f-8fcc-b6c12da96833.png";
 
   return (
     <nav className="bg-white shadow-sm border-b border-gray-200">
@@ -33,9 +37,13 @@ const Navbar = ({ currentView, onBackToDashboard, selectedProject, onProjectAdmi
             
             <div className="flex items-center space-x-3">
               <img 
-                src="/lovable-uploads/1ae6e39e-b18f-4f6f-8fcc-b6c12da96833.png" 
+                src={logoSrc}
                 alt="Kanbana Logo" 
                 className="h-8 w-auto"
+                onError={(e) => {
+                  // Fallback to original image if logo fails to load
+                  e.currentTarget.src = "/lovable-uploads/1ae6e39e-b18f-4f6f-8fcc-b6c12da96833.png";
+                }}
               />
               <h1 className="text-xl font-bold text-gray-900">
                 {currentView === 'kanban' && selectedProject 
