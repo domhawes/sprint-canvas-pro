@@ -80,8 +80,8 @@ const TaskModal = ({
     console.log('Submitting task data:', taskData);
 
     if (isEditing) {
-      // For editing, pass the complete task object with updates
-      onSave({ ...task, ...taskData });
+      // For editing, just pass the updated fields (not the complete task object)
+      onSave(taskData);
     } else if (onCreate) {
       onCreate(taskData);
     }

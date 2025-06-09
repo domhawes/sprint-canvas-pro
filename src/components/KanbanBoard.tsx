@@ -31,8 +31,9 @@ const KanbanBoard = ({ projectId }) => {
   const handleTaskSave = async (taskData) => {
     console.log('Saving task:', taskData);
     try {
-      if (updateTask) {
-        await updateTask(taskData.id, taskData);
+      if (updateTask && selectedTask) {
+        // Use selectedTask.id for the update, not taskData.id
+        await updateTask(selectedTask.id, taskData);
       }
       setShowTaskModal(false);
       setSelectedTask(null);
