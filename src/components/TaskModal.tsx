@@ -51,8 +51,9 @@ const TaskModal = ({
       setColumnId(task.column_id || '');
       setPriority(task.priority || 'medium');
       setDueDate(task.due_date ? new Date(task.due_date) : undefined);
-      setCategoryId(task.category_id || 'none');
-      setAssigneeId(task.assignee_id || 'none');
+      // Fix category ID handling - ensure we properly handle null/undefined values
+      setCategoryId(task.category_id && task.category_id.trim() !== '' ? task.category_id : 'none');
+      setAssigneeId(task.assignee_id && task.assignee_id.trim() !== '' ? task.assignee_id : 'none');
     } else {
       setTitle('');
       setDescription('');
@@ -79,8 +80,9 @@ const TaskModal = ({
       column_id: columnId,
       priority,
       due_date: dueDate ? format(dueDate, 'yyyy-MM-dd') : null,
-      category_id: categoryId === 'none' ? null : categoryId,
-      assignee_id: assigneeId === 'none' ? null : assigneeId,
+      // Ensure we send null for 'none' values, not empty strings
+      category_id: categoryId === 'none' || !categoryId || categoryId.trim() === '' ? null : categoryId,
+      assignee_id: assigneeId === 'none' || !assigneeId || assigneeId.trim() === '' ? null : assigneeId,
     };
 
     console.log('Submitting task data:', taskData);
