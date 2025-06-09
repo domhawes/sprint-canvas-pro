@@ -62,7 +62,7 @@ export const useProjectMembers = (projectId: string) => {
 
       // Map members with proper structure
       const mappedMembers: ProjectMember[] = (data || []).map(member => {
-        const profileData = member.profiles && typeof member.profiles === 'object' && 'full_name' in member.profiles
+        const profileData = member.profiles && member.profiles !== null && typeof member.profiles === 'object' && 'full_name' in member.profiles
           ? member.profiles as { full_name?: string; email?: string; avatar_url?: string }
           : null;
 
