@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
-import { CalendarIcon } from 'lucide-react';
+import { CalendarIcon, User } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from "@/lib/utils";
 
@@ -22,12 +22,15 @@ interface TaskFormFieldsProps {
   setPriority: (priority: string) => void;
   categoryId: string;
   setCategoryId: (categoryId: string) => void;
+  assigneeId: string;
+  setAssigneeId: (assigneeId: string) => void;
   dueDate: Date | undefined;
   setDueDate: (date: Date | undefined) => void;
   showCalendar: boolean;
   setShowCalendar: (show: boolean) => void;
   columns: any[];
   categories: any[];
+  members: any[];
 }
 
 const TaskFormFields = ({
@@ -41,12 +44,15 @@ const TaskFormFields = ({
   setPriority,
   categoryId,
   setCategoryId,
+  assigneeId,
+  setAssigneeId,
   dueDate,
   setDueDate,
   showCalendar,
   setShowCalendar,
   columns,
-  categories
+  categories,
+  members
 }: TaskFormFieldsProps) => {
   return (
     <div className="space-y-6">
@@ -129,33 +135,58 @@ const TaskFormFields = ({
         </div>
 
         <div className="space-y-2">
-          <Label>Due Date</Label>
-          <Popover open={showCalendar} onOpenChange={setShowCalendar}>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className={cn(
-                  "w-full justify-start text-left font-normal",
-                  !dueDate && "text-muted-foreground"
-                )}
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {dueDate ? format(dueDate, "PPP") : "Pick a date"}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="single"
-                selected={dueDate}
-                onSelect={(date) => {
-                  setDueDate(date);
-                  setShowCalendar(false);
-                }}
-                initialFocus
-              />
-            </PopoverContent>
-          </Popover>
+          <Label>Assignee</Label>
+          <Select value={assigneeId} onValueChange={setAssigneeId}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select assignee" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">
+                <div className="flex items-center gap-2">
+                  <User className="w-4 h-4" />
+                  Unassigned
+                </div>
+              </SelectItem>
+              {members.map((member) => (
+                <SelectItem key={member.user_id} value={member.user_id}>
+                  <div className="flex items-center gap-2">
+                    <User className="w-4 h-4" />
+                    {member.profile?.full_name || member.profile?.email || 'Unknown User'}
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label>Due Date</Label>
+        <Popover open={showCalendar} onOpenChange={setShowCalendar}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              className={cn(
+                "w-full justify-start text-left font-normal",
+                !dueDate && "text-muted-foreground"
+              )}
+            >
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              {dueDate ? format(dueDate, "PPP") : "Pick a date"}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <Calendar
+              mode="single"
+              selected={dueDate}
+              onSelect={(date) => {
+                setDueDate(date);
+                setShowCalendar(false);
+              }}
+              initialFocus
+            />
+          </PopoverContent>
+        </Popover>
       </div>
     </div>
   );

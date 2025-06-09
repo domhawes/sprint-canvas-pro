@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -22,6 +21,11 @@ interface Task {
     id: string;
     name: string;
     color: string;
+  };
+  assignee?: {
+    full_name?: string;
+    email?: string;
+    avatar_url?: string;
   };
 }
 
@@ -53,12 +57,13 @@ export const useKanbanBoard = (projectId: string) => {
 
       if (columnsError) throw columnsError;
 
-      // Fetch tasks with category information
+      // Fetch tasks with category and assignee information
       const { data: tasksData, error: tasksError } = await supabase
         .from('tasks')
         .select(`
           *,
-          category:task_categories(id, name, color)
+          category:task_categories(id, name, color),
+          assignee:profiles!tasks_assignee_id_fkey(full_name, email, avatar_url)
         `)
         .eq('project_id', projectId)
         .order('position');
@@ -138,6 +143,7 @@ export const useKanbanBoard = (projectId: string) => {
     priority?: 'low' | 'medium' | 'high';
     due_date?: string;
     category_id?: string;
+    assignee_id?: string;
   }) => {
     if (!user) return;
 
@@ -178,6 +184,7 @@ export const useKanbanBoard = (projectId: string) => {
     priority?: 'low' | 'medium' | 'high';
     due_date?: string;
     category_id?: string;
+    assignee_id?: string;
   }) => {
     try {
       const { data, error } = await supabase

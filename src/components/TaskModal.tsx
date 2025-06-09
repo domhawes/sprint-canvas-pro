@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { useTaskCategories } from '@/hooks/useTaskCategories';
+import { useProjectMembers } from '@/hooks/useProjectMembers';
 import TaskModalDialog from './TaskModalDialog';
 import TaskFormFields from './TaskFormFields';
 import TaskFormActions from './TaskFormActions';
@@ -32,10 +33,12 @@ const TaskModal = ({
   const [priority, setPriority] = useState('medium');
   const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
   const [categoryId, setCategoryId] = useState('none');
+  const [assigneeId, setAssigneeId] = useState('none');
   const [showCalendar, setShowCalendar] = useState(false);
   const [showAttachments, setShowAttachments] = useState(false);
   
   const { categories } = useTaskCategories(projectId);
+  const { members } = useProjectMembers(projectId);
   
   const isEditing = !!task;
 
@@ -49,6 +52,7 @@ const TaskModal = ({
       setPriority(task.priority || 'medium');
       setDueDate(task.due_date ? new Date(task.due_date) : undefined);
       setCategoryId(task.category_id || 'none');
+      setAssigneeId(task.assignee_id || 'none');
     } else {
       setTitle('');
       setDescription('');
@@ -56,12 +60,13 @@ const TaskModal = ({
       setPriority('medium');
       setDueDate(undefined);
       setCategoryId('none');
+      setAssigneeId('none');
     }
   }, [task, preselectedColumnId, columns]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('TaskModal handleSubmit', { title, description, columnId, isEditing });
+    console.log('TaskModal handleSubmit', { title, description, columnId, categoryId, assigneeId, isEditing });
     
     if (!title.trim()) {
       console.log('No title provided');
@@ -75,19 +80,19 @@ const TaskModal = ({
       priority,
       due_date: dueDate ? format(dueDate, 'yyyy-MM-dd') : null,
       category_id: categoryId === 'none' ? null : categoryId,
+      assignee_id: assigneeId === 'none' ? null : assigneeId,
     };
 
     console.log('Submitting task data:', taskData);
 
     if (isEditing) {
-      // For editing, just pass the updated fields (not the complete task object)
       onSave(taskData);
     } else if (onCreate) {
       onCreate(taskData);
     }
   };
 
-  console.log('TaskModal rendering', { columns, projectId, isEditing });
+  console.log('TaskModal rendering', { columns, projectId, isEditing, categoryId, assigneeId });
 
   const hasColumns = columns && columns.length > 0;
 
@@ -109,12 +114,15 @@ const TaskModal = ({
           setPriority={setPriority}
           categoryId={categoryId}
           setCategoryId={setCategoryId}
+          assigneeId={assigneeId}
+          setAssigneeId={setAssigneeId}
           dueDate={dueDate}
           setDueDate={setDueDate}
           showCalendar={showCalendar}
           setShowCalendar={setShowCalendar}
           columns={columns}
           categories={categories}
+          members={members}
         />
 
         <TaskAttachmentsSection
