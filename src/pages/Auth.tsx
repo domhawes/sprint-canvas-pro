@@ -11,6 +11,7 @@ import { PasswordResetForm } from '@/components/auth/PasswordResetForm';
 import { TwoFactorForm } from '@/components/auth/TwoFactorForm';
 import { AuthFooter } from '@/components/auth/AuthFooter';
 import { useAuthHandlers } from '@/hooks/useAuthHandlers';
+import { supabase } from '@/integrations/supabase/client';
 
 const Auth = () => {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -22,6 +23,7 @@ const Auth = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [otpCode, setOtpCode] = useState('');
+  const [sessionReady, setSessionReady] = useState(false);
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -50,11 +52,30 @@ const Auth = () => {
   useEffect(() => {
     const type = searchParams.get('type');
     if (type === 'recovery') {
-      console.log('Password recovery detected, showing reset form');
-      setIsPasswordReset(true);
-      setIsForgotPassword(false);
-      setIs2FAStep(false);
-      setIsSignUp(false);
+      console.log('Password recovery detected, checking session...');
+      
+      // Wait a moment for the session to be established after redirect
+      const timer = setTimeout(async () => {
+        try {
+          const { data: { session }, error } = await supabase.auth.getSession();
+          if (session && !error) {
+            console.log('Recovery session found, showing reset form');
+            setIsPasswordReset(true);
+            setIsForgotPassword(false);
+            setIs2FAStep(false);
+            setIsSignUp(false);
+            setSessionReady(true);
+          } else {
+            console.error('No recovery session found:', error);
+            setSessionReady(false);
+          }
+        } catch (error) {
+          console.error('Error checking recovery session:', error);
+          setSessionReady(false);
+        }
+      }, 1000);
+
+      return () => clearTimeout(timer);
     }
   }, [searchParams]);
 
@@ -68,6 +89,32 @@ const Auth = () => {
           </div>
           <p className="text-gray-600">Loading...</p>
         </div>
+      </div>
+    );
+  }
+
+  // Show session error for password reset if no valid session
+  if (isPasswordReset && !sessionReady) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <AuthHeader
+              title="Session Expired"
+              description="Your password reset link has expired or is invalid"
+              showBackButton={true}
+              onBack={() => {
+                setIsPasswordReset(false);
+                setIsForgotPassword(true);
+              }}
+            />
+          </CardHeader>
+          <CardContent>
+            <p className="text-center text-gray-600 mb-4">
+              Please request a new password reset email to continue.
+            </p>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -153,6 +200,7 @@ const Auth = () => {
     setConfirmPassword('');
     setEmail('');
     setFullName('');
+    setSessionReady(false);
   };
 
   const renderForm = () => {

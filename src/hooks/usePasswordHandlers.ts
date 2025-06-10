@@ -69,31 +69,35 @@ export const usePasswordHandlers = () => {
 
     setLoading(true);
     try {
-      console.log('Updating password directly with Supabase...');
+      console.log('Checking current session before password update...');
       
-      // Use updateUser directly - Supabase handles the session validation internally
-      // when the user clicks the recovery link from their email
+      // First check if we have a valid session
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !session) {
+        console.error('No valid session found:', sessionError);
+        toast({
+          title: "Session expired",
+          description: "Your password reset link has expired or is invalid. Please request a new password reset email.",
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      console.log('Valid session found, updating password...');
+      
+      // Update password with the valid session
       const { error } = await supabase.auth.updateUser({
         password: password
       });
 
       if (error) {
         console.error('Password update error:', error);
-        
-        // Handle specific error cases
-        if (error.message.includes('session_not_found') || error.message.includes('invalid_token')) {
-          toast({
-            title: "Session expired",
-            description: "Your password reset link has expired. Please request a new one.",
-            variant: "destructive",
-          });
-        } else {
-          toast({
-            title: "Error",
-            description: error.message,
-            variant: "destructive",
-          });
-        }
+        toast({
+          title: "Error",
+          description: error.message,
+          variant: "destructive",
+        });
         return false;
       } else {
         console.log('Password updated successfully');
