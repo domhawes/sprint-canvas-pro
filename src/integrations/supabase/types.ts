@@ -192,6 +192,50 @@ export type Database = {
           },
         ]
       }
+      project_invitations: {
+        Row: {
+          accepted_at: string | null
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          invited_by: string
+          project_id: string
+          role: Database["public"]["Enums"]["project_role"]
+          token: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string
+          email: string
+          expires_at?: string
+          id?: string
+          invited_by: string
+          project_id: string
+          role?: Database["public"]["Enums"]["project_role"]
+          token?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          invited_by?: string
+          project_id?: string
+          role?: Database["public"]["Enums"]["project_role"]
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_invitations_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_members: {
         Row: {
           id: string
@@ -495,6 +539,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_project_invitation: {
+        Args: { invitation_token: string }
+        Returns: Json
+      }
       can_manage_project: {
         Args: { project_uuid: string; user_uuid: string }
         Returns: boolean
