@@ -47,7 +47,7 @@ export const usePasswordHandlers = () => {
   };
 
   const handlePasswordReset = async (password: string, confirmPassword: string) => {
-    console.log('handlePasswordReset called with passwords');
+    console.log('handlePasswordReset called');
     
     if (password !== confirmPassword) {
       toast({
@@ -71,29 +71,17 @@ export const usePasswordHandlers = () => {
     try {
       console.log('Attempting to update password...');
       
-      // The session should already be established from the recovery link
-      // We can directly update the password using Supabase's updateUser method
       const { error } = await supabase.auth.updateUser({
         password: password
       });
 
       if (error) {
         console.error('Password update error:', error);
-        
-        // Handle specific error cases
-        if (error.message.includes('session_not_found') || error.message.includes('invalid_session')) {
-          toast({
-            title: "Session expired",
-            description: "Your password reset session has expired. Please request a new password reset email.",
-            variant: "destructive",
-          });
-        } else {
-          toast({
-            title: "Error",
-            description: error.message,
-            variant: "destructive",
-          });
-        }
+        toast({
+          title: "Error updating password",
+          description: error.message,
+          variant: "destructive",
+        });
         return false;
       } else {
         console.log('Password updated successfully');
