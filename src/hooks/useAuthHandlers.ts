@@ -72,6 +72,31 @@ export const useAuthHandlers = () => {
 
     try {
       console.log('Updating password in Supabase...');
+      
+      // First check if we have a valid session (recovery or regular)
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) {
+        console.error('Session error:', sessionError);
+        toast({
+          title: "Error",
+          description: "Unable to verify your session. Please try requesting a new password reset email.",
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      if (!session) {
+        console.error('No session found');
+        toast({
+          title: "Error",
+          description: "No valid session found. Please try requesting a new password reset email.",
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      console.log('Valid session found, updating password...');
       const { error } = await supabase.auth.updateUser({
         password: password
       });
