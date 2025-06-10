@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -22,8 +21,9 @@ export const useAuthHandlers = () => {
 
     setLoading(true);
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth?type=recovery`,
+      // Use our custom Resend email function instead of Supabase's built-in email
+      const { data, error } = await supabase.functions.invoke('send-password-recovery', {
+        body: { email }
       });
 
       if (error) {

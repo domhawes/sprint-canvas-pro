@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -93,12 +92,10 @@ const PasswordReset = () => {
     setLoading(true);
     
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(
-        user?.email || '',
-        {
-          redirectTo: `${window.location.origin}/auth?type=recovery`,
-        }
-      );
+      // Use our custom Resend email function
+      const { data, error } = await supabase.functions.invoke('send-password-recovery', {
+        body: { email: user?.email || '' }
+      });
 
       if (error) {
         toast({
