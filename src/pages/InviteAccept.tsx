@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -74,8 +73,10 @@ const InviteAccept: React.FC = () => {
 
       if (error) throw error;
 
-      if (data.error) {
-        throw new Error(data.error);
+      // Type check the response data
+      const response = data as any;
+      if (response && typeof response === 'object' && 'error' in response) {
+        throw new Error(response.error);
       }
 
       toast({
