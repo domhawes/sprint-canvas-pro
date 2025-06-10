@@ -19,7 +19,6 @@ export const usePasswordHandlers = () => {
 
     setLoading(true);
     try {
-      // Use our custom Resend email function instead of Supabase's built-in email
       const { data, error } = await supabase.functions.invoke('send-password-recovery', {
         body: { email }
       });
@@ -68,10 +67,11 @@ export const usePasswordHandlers = () => {
       return false;
     }
 
+    setLoading(true);
     try {
       console.log('Updating password in Supabase...');
       
-      // First check if we have a valid session (recovery or regular)
+      // Check if we have a valid session (recovery or regular)
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
       if (sessionError) {
@@ -123,6 +123,8 @@ export const usePasswordHandlers = () => {
         variant: "destructive",
       });
       return false;
+    } finally {
+      setLoading(false);
     }
   };
 
