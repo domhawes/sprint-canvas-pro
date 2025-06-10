@@ -35,62 +35,66 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("Email is required");
     }
 
-    // Generate a password reset token using Supabase Auth Admin
+    // Generate a password reset token using Supabase Auth Admin with longer expiry
     const { data, error } = await supabaseClient.auth.admin.generateLink({
       type: 'recovery',
       email: email,
       options: {
-        redirectTo: `${req.headers.get("origin") || "http://localhost:3000"}/auth?type=recovery`,
+        redirectTo: `${req.headers.get("origin") || "https://kanbana.co.uk"}/auth?type=recovery`,
       }
     });
 
     if (error) {
       console.error("Failed to generate recovery link:", error);
-      throw new Error("Failed to generate recovery link");
+      throw new Error(`Failed to generate recovery link: ${error.message}`);
+    }
+
+    if (!data.properties?.action_link) {
+      throw new Error("No action link generated");
     }
 
     console.log("Recovery link generated successfully");
 
-    // Send password recovery email via Resend using verified domain
+    // Send password recovery email via Resend using verified domain with simplified template
     const emailResponse = await resend.emails.send({
       from: "Kanbana <noreply@kanbana.co.uk>",
       to: [email],
-      subject: "Reset Your Password",
+      subject: "Reset Your Kanbana Password",
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <h1 style="color: #333; text-align: center;">Password Recovery</h1>
-          <p style="font-size: 16px; color: #666;">
-            Hi there!
-          </p>
-          <p style="font-size: 16px; color: #666;">
-            We received a request to reset your password. Click the button below to create a new password:
+        <div style="max-width: 600px; margin: 0 auto; padding: 20px; font-family: Arial, sans-serif;">
+          <h1 style="color: #333; margin-bottom: 20px;">Reset Your Password</h1>
+          <p style="font-size: 16px; margin-bottom: 20px;">
+            We received a request to reset your Kanbana password. Click the button below to set a new password:
           </p>
           <div style="text-align: center; margin: 30px 0;">
-            <a href="${data.properties?.action_link}" 
-               style="background-color: #3B82F6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+            <a href="${data.properties.action_link}" 
+               style="background-color: #3B82F6; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">
               Reset Password
             </a>
           </div>
-          <p style="font-size: 14px; color: #888;">
-            If the button doesn't work, you can copy and paste this link into your browser:
+          <p style="font-size: 14px; color: #666; margin-top: 20px;">
+            This link will expire in 1 hour. If you didn't request this, please ignore this email.
           </p>
-          <p style="font-size: 14px; color: #888; word-break: break-all;">
-            ${data.properties?.action_link}
-          </p>
-          <p style="font-size: 14px; color: #888;">
-            This link will expire in 1 hour. If you didn't request a password reset, you can safely ignore this email.
-          </p>
-          <p style="font-size: 14px; color: #888;">
-            If you're having trouble, please contact support.
+          <p style="font-size: 12px; color: #999; margin-top: 30px;">
+            If the button doesn't work, copy this link: ${data.properties.action_link}
           </p>
         </div>
       `,
     });
 
-    console.log("Recovery email sent successfully:", emailResponse);
+    if (emailResponse.error) {
+      console.error("Email sending failed:", emailResponse.error);
+      throw new Error(`Email sending failed: ${emailResponse.error.message}`);
+    }
+
+    console.log("Recovery email sent successfully:", emailResponse.data?.id);
 
     return new Response(
-      JSON.stringify({ success: true, message: "Password recovery email sent" }),
+      JSON.stringify({ 
+        success: true, 
+        message: "Password recovery email sent successfully",
+        email_id: emailResponse.data?.id
+      }),
       {
         status: 200,
         headers: {
@@ -102,7 +106,10 @@ const handler = async (req: Request): Promise<Response> => {
   } catch (error: any) {
     console.error("Error in send-password-recovery function:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message,
+        details: "Check the function logs for more information"
+      }),
       {
         status: 500,
         headers: { "Content-Type": "application/json", ...corsHeaders },

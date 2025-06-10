@@ -69,43 +69,31 @@ export const usePasswordHandlers = () => {
 
     setLoading(true);
     try {
-      console.log('Updating password in Supabase...');
+      console.log('Updating password directly with Supabase...');
       
-      // Check if we have a valid session (recovery or regular)
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError) {
-        console.error('Session error:', sessionError);
-        toast({
-          title: "Error",
-          description: "Unable to verify your session. Please try requesting a new password reset email.",
-          variant: "destructive",
-        });
-        return false;
-      }
-
-      if (!session) {
-        console.error('No session found');
-        toast({
-          title: "Error",
-          description: "No valid session found. Please try requesting a new password reset email.",
-          variant: "destructive",
-        });
-        return false;
-      }
-
-      console.log('Valid session found, updating password...');
+      // Use updateUser directly - Supabase handles the session validation internally
+      // when the user clicks the recovery link from their email
       const { error } = await supabase.auth.updateUser({
         password: password
       });
 
       if (error) {
         console.error('Password update error:', error);
-        toast({
-          title: "Error",
-          description: error.message,
-          variant: "destructive",
-        });
+        
+        // Handle specific error cases
+        if (error.message.includes('session_not_found') || error.message.includes('invalid_token')) {
+          toast({
+            title: "Session expired",
+            description: "Your password reset link has expired. Please request a new one.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Error",
+            description: error.message,
+            variant: "destructive",
+          });
+        }
         return false;
       } else {
         console.log('Password updated successfully');
