@@ -1,26 +1,30 @@
 
 import React, { useState } from 'react';
-import { UserPlus, Mail, Trash2 } from 'lucide-react';
+import { UserPlus, Mail, Trash2, Clock, CheckCircle } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useProjectMembers } from '@/hooks/useProjectMembers';
+import { useProjectInvitations } from '@/hooks/useProjectInvitations';
 
 interface ProjectMemberInviteProps {
   projectId: string;
+  projectName?: string;
 }
 
-const ProjectMemberInvite: React.FC<ProjectMemberInviteProps> = ({ projectId }) => {
+const ProjectMemberInvite: React.FC<ProjectMemberInviteProps> = ({ projectId, projectName = "this project" }) => {
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<'viewer' | 'editor'>('viewer');
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const { members, loading: membersLoading, refetch } = useProjectMembers(projectId);
+  const { invitations, loading: invitationsLoading, sendInvitation, deleteInvitation } = useProjectInvitations(projectId);
 
-  const handleInvite = async () => {
+  const handleDirectAdd = async () => {
     if (!email.trim()) {
       toast({
         title: "Email required",
@@ -73,10 +77,9 @@ const ProjectMemberInvite: React.FC<ProjectMemberInviteProps> = ({ projectId }) 
           description: `${email} has been added to the project.`,
         });
       } else {
-        // For now, we'll just show a message that the user needs to sign up first
         toast({
           title: "User not found",
-          description: "This user needs to create an account first before being invited.",
+          description: "This user needs to create an account first. Use the Email Invitation tab to send them an invite.",
           variant: "destructive",
         });
         return;
@@ -87,10 +90,32 @@ const ProjectMemberInvite: React.FC<ProjectMemberInviteProps> = ({ projectId }) 
       refetch();
     } catch (error: any) {
       toast({
-        title: "Invitation failed",
+        title: "Failed to add member",
         description: error.message,
         variant: "destructive",
       });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEmailInvite = async () => {
+    if (!email.trim()) {
+      toast({
+        title: "Email required",
+        description: "Please enter an email address to invite.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const success = await sendInvitation(email.trim(), role, projectName);
+      if (success) {
+        setEmail('');
+        setRole('viewer');
+      }
     } finally {
       setLoading(false);
     }
@@ -135,36 +160,118 @@ const ProjectMemberInvite: React.FC<ProjectMemberInviteProps> = ({ projectId }) 
           Invite team members to collaborate on this project
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Invite Form */}
-        <div className="space-y-3">
-          <div className="flex gap-2">
-            <Input
-              type="email"
-              placeholder="Enter email address"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="flex-1"
-            />
-            <Select value={role} onValueChange={(value: 'viewer' | 'editor') => setRole(value)}>
-              <SelectTrigger className="w-32">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="viewer">Viewer</SelectItem>
-                <SelectItem value="editor">Editor</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button onClick={handleInvite} disabled={loading}>
-              {loading ? 'Inviting...' : 'Invite'}
-            </Button>
-          </div>
-          <p className="text-sm text-gray-500">
-            Users must have an account to be added to projects.
-          </p>
-        </div>
+      <CardContent className="space-y-6">
+        <Tabs defaultValue="direct" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="direct">Direct Add</TabsTrigger>
+            <TabsTrigger value="invite">Email Invitation</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="direct" className="space-y-3">
+            <div className="flex gap-2">
+              <Input
+                type="email"
+                placeholder="Enter email address"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="flex-1"
+              />
+              <Select value={role} onValueChange={(value: 'viewer' | 'editor') => setRole(value)}>
+                <SelectTrigger className="w-32">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="viewer">Viewer</SelectItem>
+                  <SelectItem value="editor">Editor</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button onClick={handleDirectAdd} disabled={loading}>
+                {loading ? 'Adding...' : 'Add'}
+              </Button>
+            </div>
+            <p className="text-sm text-gray-500">
+              Users must already have an account to be added directly.
+            </p>
+          </TabsContent>
+          
+          <TabsContent value="invite" className="space-y-3">
+            <div className="flex gap-2">
+              <Input
+                type="email"
+                placeholder="Enter email address"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="flex-1"
+              />
+              <Select value={role} onValueChange={(value: 'viewer' | 'editor') => setRole(value)}>
+                <SelectTrigger className="w-32">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="viewer">Viewer</SelectItem>
+                  <SelectItem value="editor">Editor</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button onClick={handleEmailInvite} disabled={loading}>
+                <Mail className="w-4 h-4 mr-2" />
+                {loading ? 'Sending...' : 'Send Invite'}
+              </Button>
+            </div>
+            <p className="text-sm text-gray-500">
+              Send an email invitation. Recipients can create an account if needed.
+            </p>
+          </TabsContent>
+        </Tabs>
 
-        {/* Members List */}
+        {/* Pending Invitations */}
+        {invitations.length > 0 && (
+          <div className="space-y-2">
+            <h4 className="font-medium text-gray-900">Pending Invitations</h4>
+            {invitationsLoading ? (
+              <p className="text-sm text-gray-500">Loading invitations...</p>
+            ) : (
+              <div className="space-y-2">
+                {invitations.map((invitation) => (
+                  <div key={invitation.id} className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg border">
+                    <div className="flex items-center space-x-3">
+                      <Mail className="w-5 h-5 text-yellow-600" />
+                      <div>
+                        <p className="font-medium text-gray-900">{invitation.email}</p>
+                        <p className="text-sm text-gray-600">
+                          {invitation.accepted_at ? (
+                            <span className="flex items-center text-green-600">
+                              <CheckCircle className="w-4 h-4 mr-1" />
+                              Accepted
+                            </span>
+                          ) : (
+                            <span className="flex items-center text-yellow-600">
+                              <Clock className="w-4 h-4 mr-1" />
+                              Pending • Expires {new Date(invitation.expires_at).toLocaleDateString()}
+                            </span>
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm text-gray-500 capitalize">{invitation.role}</span>
+                      {!invitation.accepted_at && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => deleteInvitation(invitation.id)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Current Members */}
         <div className="space-y-2">
           <h4 className="font-medium text-gray-900">Current Members</h4>
           {membersLoading ? (
