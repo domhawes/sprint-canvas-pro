@@ -35,12 +35,16 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("Email is required");
     }
 
-    // Generate a password reset token using Supabase Auth Admin with longer expiry
+    // Get the origin from the request headers, fallback to production URL
+    const origin = req.headers.get("origin") || "https://kanbana.co.uk";
+    console.log("Using origin:", origin);
+
+    // Generate a password reset token using Supabase Auth Admin with 1 hour expiry
     const { data, error } = await supabaseClient.auth.admin.generateLink({
       type: 'recovery',
       email: email,
       options: {
-        redirectTo: `${req.headers.get("origin") || "https://kanbana.co.uk"}/auth?type=recovery`,
+        redirectTo: `${origin}/auth?type=recovery`,
       }
     });
 
@@ -55,7 +59,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("Recovery link generated successfully");
 
-    // Send password recovery email via Resend using verified domain with simplified template
+    // Send password recovery email via Resend using verified domain
     const emailResponse = await resend.emails.send({
       from: "Kanbana <noreply@kanbana.co.uk>",
       to: [email],

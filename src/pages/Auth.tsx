@@ -11,7 +11,6 @@ import { PasswordResetForm } from '@/components/auth/PasswordResetForm';
 import { TwoFactorForm } from '@/components/auth/TwoFactorForm';
 import { AuthFooter } from '@/components/auth/AuthFooter';
 import { useAuthHandlers } from '@/hooks/useAuthHandlers';
-import { supabase } from '@/integrations/supabase/client';
 
 const Auth = () => {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -23,7 +22,6 @@ const Auth = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [otpCode, setOtpCode] = useState('');
-  const [isLoadingRecovery, setIsLoadingRecovery] = useState(false);
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -48,52 +46,29 @@ const Auth = () => {
     }
   }, [user, loading, navigate, isPasswordReset]);
 
-  // Handle password recovery detection
+  // Handle password recovery detection - simplified approach
   useEffect(() => {
     const type = searchParams.get('type');
     console.log('URL type parameter:', type);
     
     if (type === 'recovery') {
       console.log('Recovery type detected, setting password reset mode');
-      setIsLoadingRecovery(true);
       setIsPasswordReset(true);
       setIsForgotPassword(false);
       setIs2FAStep(false);
       setIsSignUp(false);
-      
-      // Check if we have a valid session after a short delay
-      setTimeout(async () => {
-        try {
-          const { data: { session }, error } = await supabase.auth.getSession();
-          console.log('Recovery session check:', { session: !!session, error });
-          
-          if (!session || error) {
-            console.log('No valid recovery session found');
-            setIsPasswordReset(false);
-            setIsForgotPassword(true);
-          }
-        } catch (error) {
-          console.error('Error checking recovery session:', error);
-          setIsPasswordReset(false);
-          setIsForgotPassword(true);
-        } finally {
-          setIsLoadingRecovery(false);
-        }
-      }, 1000);
     }
   }, [searchParams]);
 
-  // Show loading spinner while auth is initializing or checking recovery
-  if (loading || isLoadingRecovery) {
+  // Show loading spinner while auth is initializing
+  if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center p-4">
         <div className="text-center">
           <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center mx-auto mb-4">
             <span className="text-white font-bold">K</span>
           </div>
-          <p className="text-gray-600">
-            {isLoadingRecovery ? 'Processing password reset link...' : 'Loading...'}
-          </p>
+          <p className="text-gray-600">Loading...</p>
         </div>
       </div>
     );
