@@ -51,9 +51,9 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("Recovery link generated successfully");
 
-    // Send password recovery email via Resend
+    // Send password recovery email via Resend using verified domain
     const emailResponse = await resend.emails.send({
-      from: "Password Recovery <onboarding@resend.dev>",
+      from: "Kanbana <noreply@kanbana.co.uk>",
       to: [email],
       subject: "Reset Your Password",
       html: `
