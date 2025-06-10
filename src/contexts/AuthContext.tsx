@@ -148,6 +148,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signUp = async (email: string, password: string, fullName?: string) => {
     try {
+      // Sign up without email confirmation to avoid email sending issues
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -158,20 +159,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
 
       if (error) {
+        console.error('Sign up error:', error);
         toast({
           title: "Sign up failed",
           description: error.message,
           variant: "destructive",
         });
-      } else if (data.user && !data.session) {
+      } else {
+        console.log('Sign up successful:', data);
         toast({
-          title: "Check your email",
-          description: "We've sent you a confirmation link to complete your registration.",
+          title: "Account created successfully",
+          description: "You can now sign in with your credentials.",
         });
       }
 
       return { error };
     } catch (error: any) {
+      console.error('Sign up error:', error);
       toast({
         title: "Sign up failed",
         description: error.message,
