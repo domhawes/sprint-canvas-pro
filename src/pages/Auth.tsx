@@ -23,6 +23,7 @@ const Auth = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [otpCode, setOtpCode] = useState('');
+  const [recoverySessionChecked, setRecoverySessionChecked] = useState(false);
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -41,36 +42,108 @@ const Auth = () => {
 
   // Handle user authentication redirect
   useEffect(() => {
-    if (!loading && user) {
+    if (!loading && user && !isPasswordReset) {
       console.log('User authenticated, redirecting to dashboard...');
       navigate('/', { replace: true });
     }
-  }, [user, loading, navigate]);
+  }, [user, loading, navigate, isPasswordReset]);
 
-  // Handle password recovery from URL - check immediately on mount
+  // Handle password recovery detection and session establishment
   useEffect(() => {
-    const type = searchParams.get('type');
-    console.log('URL type parameter:', type);
-    
-    if (type === 'recovery') {
-      console.log('Password recovery detected from URL, setting up reset form');
-      setIsPasswordReset(true);
-      setIsForgotPassword(false);
-      setIs2FAStep(false);
-      setIsSignUp(false);
-    }
-  }, [searchParams]);
+    const checkRecoverySession = async () => {
+      const type = searchParams.get('type');
+      console.log('URL type parameter:', type);
+      
+      if (type === 'recovery') {
+        console.log('Password recovery detected, waiting for session establishment...');
+        
+        // Give Supabase time to process the recovery token and establish session
+        let attempts = 0;
+        const maxAttempts = 10;
+        
+        const checkSession = async () => {
+          try {
+            const { data: { session }, error } = await supabase.auth.getSession();
+            console.log('Session check attempt', attempts + 1, '- Session:', !!session, 'Error:', error);
+            
+            if (session && !error) {
+              console.log('Recovery session established, showing password reset form');
+              setIsPasswordReset(true);
+              setIsForgotPassword(false);
+              setIs2FAStep(false);
+              setIsSignUp(false);
+              setRecoverySessionChecked(true);
+              return true;
+            }
+            
+            attempts++;
+            if (attempts < maxAttempts) {
+              setTimeout(checkSession, 500); // Check again in 500ms
+            } else {
+              console.error('Failed to establish recovery session after maximum attempts');
+              setRecoverySessionChecked(true);
+            }
+          } catch (error) {
+            console.error('Error checking recovery session:', error);
+            attempts++;
+            if (attempts < maxAttempts) {
+              setTimeout(checkSession, 500);
+            } else {
+              setRecoverySessionChecked(true);
+            }
+          }
+        };
+        
+        checkSession();
+      } else {
+        setRecoverySessionChecked(true);
+      }
+    };
 
-  // Show loading spinner while auth is initializing
-  if (loading) {
+    if (!loading) {
+      checkRecoverySession();
+    }
+  }, [searchParams, loading]);
+
+  // Show loading spinner while auth is initializing or checking recovery session
+  if (loading || (searchParams.get('type') === 'recovery' && !recoverySessionChecked)) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center p-4">
         <div className="text-center">
           <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center mx-auto mb-4">
             <span className="text-white font-bold">K</span>
           </div>
-          <p className="text-gray-600">Loading...</p>
+          <p className="text-gray-600">
+            {searchParams.get('type') === 'recovery' ? 'Processing password reset link...' : 'Loading...'}
+          </p>
         </div>
+      </div>
+    );
+  }
+
+  // Show error if recovery was attempted but no session was established
+  if (searchParams.get('type') === 'recovery' && recoverySessionChecked && !isPasswordReset) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <AuthHeader
+              title="Invalid Reset Link"
+              description="Your password reset link has expired or is invalid"
+              showBackButton={true}
+              onBack={() => {
+                setIsForgotPassword(true);
+                // Clear the URL params
+                window.history.replaceState({}, '', '/auth');
+              }}
+            />
+          </CardHeader>
+          <CardContent>
+            <p className="text-center text-gray-600 mb-4">
+              Please request a new password reset email to continue.
+            </p>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -111,6 +184,8 @@ const Auth = () => {
           setIsPasswordReset(false);
           setPassword('');
           setConfirmPassword('');
+          // Clear the URL params and redirect
+          window.history.replaceState({}, '', '/auth');
           navigate('/', { replace: true });
         }
       } else if (isSignUp) {
@@ -156,6 +231,8 @@ const Auth = () => {
     setConfirmPassword('');
     setEmail('');
     setFullName('');
+    // Clear URL params
+    window.history.replaceState({}, '', '/auth');
   };
 
   const renderForm = () => {
