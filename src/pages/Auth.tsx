@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -11,6 +10,7 @@ import { PasswordResetForm } from '@/components/auth/PasswordResetForm';
 import { TwoFactorForm } from '@/components/auth/TwoFactorForm';
 import { AuthFooter } from '@/components/auth/AuthFooter';
 import { useAuthHandlers } from '@/hooks/useAuthHandlers';
+import { supabase } from '@/integrations/supabase/client';
 
 const Auth = () => {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -22,7 +22,8 @@ const Auth = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [otpCode, setOtpCode] = useState('');
-  const { user, loading } = useAuth();
+  const [isCheckingRecovery, setIsCheckingRecovery] = useState(false);
+  const { user, loading, session } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
@@ -46,29 +47,67 @@ const Auth = () => {
     }
   }, [user, loading, navigate, isPasswordReset]);
 
-  // Handle password recovery detection - simplified approach
+  // Handle password recovery detection with proper session checking
   useEffect(() => {
     const type = searchParams.get('type');
     console.log('URL type parameter:', type);
     
     if (type === 'recovery') {
-      console.log('Recovery type detected, setting password reset mode');
-      setIsPasswordReset(true);
-      setIsForgotPassword(false);
-      setIs2FAStep(false);
-      setIsSignUp(false);
-    }
-  }, [searchParams]);
+      console.log('Recovery type detected, checking for recovery session...');
+      setIsCheckingRecovery(true);
+      
+      // Wait for auth to finish loading, then check for recovery session
+      const checkRecoverySession = async () => {
+        try {
+          // Wait a bit for the auth state to settle after URL change
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
+          const { data: { session: currentSession }, error } = await supabase.auth.getSession();
+          console.log('Recovery session check:', { 
+            hasSession: !!currentSession, 
+            sessionType: currentSession?.user?.aud,
+            error 
+          });
+          
+          if (currentSession && !error) {
+            console.log('Valid recovery session found, enabling password reset');
+            setIsPasswordReset(true);
+            setIsForgotPassword(false);
+            setIs2FAStep(false);
+            setIsSignUp(false);
+          } else {
+            console.log('No valid recovery session, falling back to forgot password');
+            setIsPasswordReset(false);
+            setIsForgotPassword(true);
+            setIs2FAStep(false);
+            setIsSignUp(false);
+          }
+        } catch (error) {
+          console.error('Error checking recovery session:', error);
+          setIsPasswordReset(false);
+          setIsForgotPassword(true);
+        } finally {
+          setIsCheckingRecovery(false);
+        }
+      };
 
-  // Show loading spinner while auth is initializing
-  if (loading) {
+      if (!loading) {
+        checkRecoverySession();
+      }
+    }
+  }, [searchParams, loading]);
+
+  // Show loading spinner while auth is initializing or checking recovery
+  if (loading || isCheckingRecovery) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center p-4">
         <div className="text-center">
           <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center mx-auto mb-4">
             <span className="text-white font-bold">K</span>
           </div>
-          <p className="text-gray-600">Loading...</p>
+          <p className="text-gray-600">
+            {isCheckingRecovery ? 'Verifying password reset link...' : 'Loading...'}
+          </p>
         </div>
       </div>
     );
@@ -80,7 +119,8 @@ const Auth = () => {
       isForgotPassword, 
       is2FAStep, 
       isPasswordReset, 
-      isSignUp 
+      isSignUp,
+      hasSession: !!session 
     });
     
     if (authLoading) return;
@@ -103,7 +143,7 @@ const Auth = () => {
       }
 
       if (isPasswordReset) {
-        console.log('Processing password reset');
+        console.log('Processing password reset with session check');
         const success = await handlePasswordReset(password, confirmPassword);
         if (success) {
           console.log('Password reset successful, redirecting to dashboard');

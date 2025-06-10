@@ -69,7 +69,22 @@ export const usePasswordHandlers = () => {
 
     setLoading(true);
     try {
-      console.log('Attempting to update password...');
+      console.log('Checking current session before password update...');
+      
+      // First verify we have a valid session
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !session) {
+        console.error('No valid session for password reset:', sessionError);
+        toast({
+          title: "Error updating password",
+          description: "Auth session missing! Please click the reset link in your email again.",
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      console.log('Valid session found, updating password...');
       
       const { error } = await supabase.auth.updateUser({
         password: password
